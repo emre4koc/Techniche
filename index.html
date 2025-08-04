@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tekniksel - Servis Takip (Realtime DB)</title>
+    <title>Techniche - Servis Takip (Realtime DB)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -89,7 +89,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-1.007 1.11-1.226.554-.22 1.197-.22 1.752 0 .554.22 1.02.684 1.11 1.226l.094.542c.063.372.363.65.743.765.38.115.784.06.115-.145l.432-.433c.44-.44 1.143-.44 1.584 0 .44.44.44 1.143 0 1.584l-.433.432c-.205.205-.26.505-.145.885.115.38.393.68.765.743l.542.094c.542.09.927.56 1.226 1.11.22.554.22 1.197 0 1.752-.22.554-.684 1.02-1.226 1.11l-.542.094c-.372.063-.65.363-.765.743-.115.38-.06.784.145 1.15l.433.433c.44.44.44 1.143 0 1.584-.44.44-1.143.44-1.584 0l-.432-.433c-.205-.205-.505-.26-.885-.145-.38.115-.68.393-.743.765l-.094.542c-.09.542-.56.927-1.11 1.226-.554-.22-1.197.22-1.752 0-.554-.22-1.02-.684-1.11-1.226l-.094-.542c-.063-.372-.363-.65-.743-.765-.38-.115-.784-.06-1.15.145l-.433.432c-.44-.44-.44 1.143 0 1.584.44.44 1.143.44 1.584 0l.432-.433c.205.205.26-.505.145.885-.115-.38-.393-.68-.765.743l-.542-.094c-.542-.09-1.007-.56-1.226-1.11-.22-.554-.22-1.197 0-1.752.22-.554.684-1.02 1.226-1.11l.542-.094c.372-.063.65-.363.765-.743.115.38.06-.784-.145-1.15l-.433-.432c-.44-.44-.44-1.143 0-1.584.44-.44 1.143.44 1.584 0l.432.433c.205.205.505.26.885.145.38-.115.68-.393.743-.765l.094-.542Z" />
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                 </svg>
-                <h1 class="text-3xl font-bold text-gray-900 mt-4">Tekniksel</h1>
+                <h1 class="text-3xl font-bold text-gray-900 mt-4">Techniche</h1>
                 <p class="text-gray-600">Servis Takip Sistemine Hoş Geldiniz</p>
             </div>
             <form id="login-form" class="mt-8 space-y-6">
@@ -97,9 +97,22 @@
                     <label for="email" class="sr-only">E-posta</label>
                     <input id="email" name="email" type="email" autocomplete="email" required class="w-full px-4 py-3 rounded-lg bg-gray-200 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-0" placeholder="E-posta Adresi">
                 </div>
-                <div>
+                <div class="relative">
                     <label for="password" class="sr-only">Şifre</label>
                     <input id="password" name="password" type="password" autocomplete="current-password" required class="w-full px-4 py-3 rounded-lg bg-gray-200 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-0" placeholder="Şifre">
+                    <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500">
+                        <svg id="eye-open" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                        <svg id="eye-closed" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 hidden"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.243 4.243L6.228 6.228" /></svg>
+                    </button>
+                </div>
+                 <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="remember-me" class="ml-2 block text-sm text-gray-900">Beni Hatırla</label>
+                    </div>
+                    <div class="text-sm">
+                         <a href="#" id="forgot-password-link" class="font-medium text-indigo-600 hover:text-indigo-500">Şifremi unuttum</a>
+                    </div>
                 </div>
                 <div id="login-error" class="text-red-500 text-sm hidden"></div>
                 <div>
@@ -121,7 +134,7 @@
                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-1.007 1.11-1.226.554-.22 1.197-.22 1.752 0 .554.22 1.02.684 1.11 1.226l.094.542c.063.372.363.65.743.765.38.115.784.06.115-.145l.432-.433c.44-.44 1.143-.44 1.584 0 .44.44.44 1.143 0 1.584l-.433.432c-.205.205-.26.505-.145.885.115.38.393.68.765.743l.542.094c.542.09.927.56 1.226 1.11.22.554.22 1.197 0 1.752-.22.554-.684 1.02-1.226 1.11l-.542.094c-.372.063-.65.363-.765.743-.115.38-.06.784.145 1.15l.433.433c.44.44.44 1.143 0 1.584-.44.44-1.143.44-1.584 0l-.432-.433c-.205-.205-.505-.26-.885-.145-.38.115-.68.393-.743.765l-.094.542c-.09.542-.56.927-1.11 1.226-.554-.22-1.197.22-1.752 0-.554-.22-1.02-.684-1.11-1.226l-.094-.542c-.063-.372-.363-.65-.743-.765-.38-.115-.784-.06-1.15.145l-.433.432c-.44-.44-.44 1.143 0 1.584.44.44 1.143.44 1.584 0l.432-.433c.205.205.26-.505.145.885-.115-.38-.393-.68-.765.743l-.542-.094c-.542-.09-1.007-.56-1.226-1.11-.22-.554-.22-1.197 0-1.752.22-.554.684-1.02 1.226-1.11l.542-.094c.372-.063.65-.363.765-.743.115.38.06-.784-.145-1.15l-.433-.432c-.44-.44-.44-1.143 0-1.584.44-.44 1.143.44 1.584 0l.432.433c.205.205.505.26.885.145.38-.115.68-.393.743-.765l.094-.542Z" />
                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                     </svg>
-                    <h1 class="text-xl font-bold ml-2">Tekniksel</h1>
+                    <h1 class="text-xl font-bold ml-2">Techniche</h1>
                 </div>
             </div>
             <nav id="main-nav" class="flex-grow overflow-y-auto px-4 space-y-2">
@@ -168,7 +181,8 @@
             signInWithEmailAndPassword, 
             createUserWithEmailAndPassword,
             onAuthStateChanged, 
-            signOut 
+            signOut,
+            sendPasswordResetEmail
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { 
             getDatabase,
@@ -230,6 +244,8 @@
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('main-content');
         const userProfileWidget = document.getElementById('user-profile-widget');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        const togglePassword = document.getElementById('toggle-password');
 
         // --- UTILS ---
         const formatTimestamp = (timestamp, includeTime = true) => {
@@ -339,6 +355,11 @@
                 currentUserData = null;
                 loginScreen.classList.remove('hidden');
                 appContainer.classList.add('hidden');
+                const savedEmail = localStorage.getItem('rememberedEmail');
+                if (savedEmail) {
+                    loginForm.email.value = savedEmail;
+                    document.getElementById('remember-me').checked = true;
+                }
             }
         });
 
@@ -347,6 +368,14 @@
             const email = loginForm.email.value;
             const password = loginForm.password.value;
             signInWithEmailAndPassword(auth, email, password)
+                .then(() => {
+                    const rememberMe = document.getElementById('remember-me').checked;
+                    if (rememberMe) {
+                        localStorage.setItem('rememberedEmail', email);
+                    } else {
+                        localStorage.removeItem('rememberedEmail');
+                    }
+                })
                 .catch(error => {
                     loginError.textContent = "E-posta veya şifre hatalı.";
                     loginError.classList.remove('hidden');
@@ -356,6 +385,53 @@
         logoutButton.addEventListener('click', () => {
             signOut(auth);
         });
+        
+        togglePassword.addEventListener('click', () => {
+            const passwordInput = document.getElementById('password');
+            const eyeOpen = document.getElementById('eye-open');
+            const eyeClosed = document.getElementById('eye-closed');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeOpen.classList.add('hidden');
+                eyeClosed.classList.remove('hidden');
+            } else {
+                passwordInput.type = 'password';
+                eyeOpen.classList.remove('hidden');
+                eyeClosed.classList.add('hidden');
+            }
+        });
+
+        forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            const modalContent = `
+                <form id="reset-password-form" class="p-6 space-y-4">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">Şifre Sıfırlama</h3>
+                    <p class="text-sm text-gray-600">Kayıtlı e-posta adresinizi girin. Size şifrenizi sıfırlamanız için bir bağlantı göndereceğiz.</p>
+                    <input type="email" name="email" placeholder="E-posta Adresi" required class="w-full p-2 border rounded-md">
+                    <div id="reset-feedback" class="text-sm"></div>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-action="cancel" class="bg-gray-300 px-4 py-2 rounded-lg">İptal</button>
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Gönder</button>
+                    </div>
+                </form>
+            `;
+            showModal(modalContent);
+
+            document.getElementById('reset-password-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = e.target.email.value;
+                const feedbackEl = document.getElementById('reset-feedback');
+                sendPasswordResetEmail(auth, email)
+                    .then(() => {
+                        feedbackEl.textContent = 'Şifre sıfırlama e-postası gönderildi. Lütfen gelen kutunuzu kontrol edin.';
+                        feedbackEl.className = 'text-green-600';
+                    })
+                    .catch((error) => {
+                        feedbackEl.textContent = 'Bir hata oluştu. E-posta adresinizi kontrol edin.';
+                        feedbackEl.className = 'text-red-600';
+                    });
+            });
+        });
 
         // --- UI INITIALIZATION ---
         const initializeAppUI = () => {
@@ -364,6 +440,8 @@
             navigateTo('anasayfa');
             updateUserProfileWidget();
             listenForUnreadMessages();
+            requestNotificationPermission();
+            checkDutyAndNotify();
         };
 
         const updateUserProfileWidget = () => {
@@ -728,11 +806,14 @@
 
                 let days = "";
                 for (let x = dayOffset; x > 0; x--) {
-                    days += `<div class="p-2 h-28 border bg-gray-50 text-gray-400">${prevLastDate - x + 1}</div>`;
+                    days += `<div class="p-2 h-24 md:h-28 border bg-gray-50 text-gray-400">${prevLastDate - x + 1}</div>`;
                 }
+                
+                const todayStr = getLocalDateString(new Date());
 
                 for (let i = 1; i <= lastDate; i++) {
                     const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                    const isToday = currentDateStr === todayStr;
                     const eventsHtml = (eventsByDate[currentDateStr] || []).map(event => {
                         if (event.type === 'duty') {
                             return `<div class="text-xs p-1 bg-green-100 text-green-800 rounded-md truncate">${event.user} - ${event.text}</div>`;
@@ -742,9 +823,9 @@
                     }).join('');
                     
                     days += `
-                        <div class="p-2 h-28 border relative cursor-pointer hover:bg-indigo-50" data-date="${currentDateStr}">
+                        <div class="p-2 h-24 md:h-28 border relative cursor-pointer hover:bg-indigo-50 ${isToday ? 'bg-indigo-100' : ''}" data-date="${currentDateStr}">
                             <div class="font-semibold">${i}</div>
-                            <div class="mt-1 space-y-1">${eventsHtml}</div>
+                            <div class="mt-1 space-y-1 overflow-hidden">${eventsHtml}</div>
                         </div>
                     `;
                 }
@@ -753,7 +834,7 @@
                 const remainingCells = 7 - (totalCells % 7);
                 if (remainingCells < 7) {
                     for (let i = 1; i <= remainingCells; i++) {
-                        days += `<div class="p-2 h-28 border bg-gray-50 text-gray-400">${i}</div>`;
+                        days += `<div class="p-2 h-24 md:h-28 border bg-gray-50 text-gray-400">${i}</div>`;
                     }
                 }
 
@@ -765,7 +846,13 @@
                             <button id="next-month" class="p-2 rounded-full hover:bg-gray-200">&gt;</button>
                         </div>
                         <div class="grid grid-cols-7 text-center font-semibold text-gray-600 mb-2">
-                            <div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
+                            <div class="hidden md:block">Pazartesi</div><div class="md:hidden">Pzt</div>
+                            <div class="hidden md:block">Salı</div><div class="md:hidden">Sal</div>
+                            <div class="hidden md:block">Çarşamba</div><div class="md:hidden">Çar</div>
+                            <div class="hidden md:block">Perşembe</div><div class="md:hidden">Per</div>
+                            <div class="hidden md:block">Cuma</div><div class="md:hidden">Cum</div>
+                            <div class="hidden md:block">Cumartesi</div><div class="md:hidden">Cmt</div>
+                            <div class="hidden md:block">Pazar</div><div class="md:hidden">Paz</div>
                         </div>
                         <div id="calendar-grid" class="grid grid-cols-7 text-sm">${days}</div>
                     </div>
@@ -1144,17 +1231,20 @@
 
             const modalContent = `
                 <div id="print-area">
-                    <div id="print-area-content" class="p-6">
-                        <div class="border-2 border-dashed border-gray-400 p-4 w-[320px] mx-auto">
-                            <h3 class="text-center font-bold text-lg">${companyInfo.name || 'Şirket Adı'}</h3>
-                            <hr class="my-2">
-                            <p class="text-center font-semibold text-xl">${device.name}</p>
-                            <p class="text-center text-sm text-gray-600">S/N: ${device.serial}</p>
-                            <div id="qrcode-container" class="flex justify-center my-4"></div>
-                            <div class="text-xs text-center text-gray-500">
-                                <p>${companyInfo.phone || ''}</p>
-                                <p>${companyInfo.email || ''}</p>
-                                <p>${companyInfo.website || ''}</p>
+                     <div id="print-area-content" class="p-6">
+                        <div class="border-2 border-black p-2 w-[400px] h-[150px] mx-auto flex items-center gap-4">
+                            <!-- Left side: QR Code -->
+                            <div id="qrcode-container" class="flex-shrink-0"></div>
+                            <!-- Right side: Info -->
+                            <div class="flex flex-col justify-between h-full py-1 flex-grow">
+                                <div>
+                                    <h3 class="font-bold text-lg leading-tight">${device.name}</h3>
+                                    <p class="text-sm text-gray-600">S/N: ${device.serial}</p>
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    <p class="font-semibold">${companyInfo.name || 'Şirket Adı'}</p>
+                                    <p>${companyInfo.website || ''}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1168,8 +1258,8 @@
             
             new QRCode(document.getElementById("qrcode-container"), {
                 text: JSON.stringify({ type: 'device', id: deviceId }),
-                width: 128,
-                height: 128,
+                width: 120,
+                height: 120,
             });
         };
 
@@ -1608,16 +1698,30 @@
         };
 
         const listenForUnreadMessages = () => {
-            onValue(ref(db, 'chats'), (snapshot) => {
+            const chatsRef = ref(db, 'chats');
+            onValue(chatsRef, (snapshot) => {
                 const allChats = snapshot.val() || {};
-                unreadMessages = {};
-                Object.values(allChats).forEach(chat => {
+                const newUnreadMessages = {};
+                let hasNewMessage = false;
+
+                Object.entries(allChats).forEach(([chatId, chat]) => {
                     Object.values(chat).forEach(msg => {
                         if (msg.to === currentUser.uid && !msg.read) {
-                            unreadMessages[msg.from] = true;
+                            newUnreadMessages[msg.from] = true;
+                            // Check if this is a new unread message compared to the old state
+                            if (!unreadMessages[msg.from]) {
+                                hasNewMessage = true;
+                                get(ref(db, `users/${msg.from}`)).then(userSnap => {
+                                    if(userSnap.exists()){
+                                        showNotification(`Yeni Mesaj: ${userSnap.val().name}`, msg.text);
+                                    }
+                                });
+                            }
                         }
                     });
                 });
+                
+                unreadMessages = newUnreadMessages;
                 
                 const unreadIndicator = document.getElementById('mesajlar-unread');
                 if (unreadIndicator) {
@@ -1739,11 +1843,8 @@
                 const cols = row.querySelectorAll("td, th");
                 const rowData = [];
                 for (const col of cols) {
-                    // Get text content, remove extra whitespace, and handle commas
                     let data = col.innerText.replace(/(\r\n|\n|\r)/gm, "").replace(/(\s\s)/gm, " ").trim();
-                    // To prevent issues with commas in data, wrap in double quotes
                     data = `"${data}"`; 
-                    // Don't include the "İşlemler" column
                     if (col.innerText !== "İşlemler") {
                        rowData.push(data);
                     }
@@ -1760,6 +1861,39 @@
             downloadLink.click();
             document.body.removeChild(downloadLink);
         }
+
+        // --- NOTIFICATIONS ---
+        const requestNotificationPermission = () => {
+            if (!("Notification" in window)) {
+                console.log("This browser does not support desktop notification");
+            } else if (Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+        };
+
+        const showNotification = (title, body) => {
+            if (Notification.permission === "granted") {
+                new Notification(title, { body });
+            }
+        };
+
+        const checkDutyAndNotify = async () => {
+            const todayStr = getLocalDateString(new Date());
+            // Prevent re-notifying in the same session
+            if (sessionStorage.getItem('dutyNotified') === todayStr) {
+                return;
+            }
+            const dutiesRef = ref(db, 'duties');
+            const dutiesSnap = await get(dutiesRef);
+            if (dutiesSnap.exists()) {
+                const allDuties = dutiesSnap.val();
+                const myDutyToday = Object.values(allDuties).find(d => d.date === todayStr && d.userId === currentUser.uid);
+                if (myDutyToday) {
+                    showNotification("Nöbet Hatırlatması", `Bugün ${myDutyToday.dutyType} nöbetçisisiniz.`);
+                    sessionStorage.setItem('dutyNotified', todayStr);
+                }
+            }
+        };
 
     </script>
 </body>
