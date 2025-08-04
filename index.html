@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tekniksel - Servis Takip (Realtime DB)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- QR Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar { transition: transform 0.3s ease-in-out; }
+        .main-content { transition: margin-left 0.3s ease-in-out; }
+        .modal-bg { background-color: rgba(0,0,0,0.5); }
+        .modal-content { animation: slide-up 0.3s ease-out; }
+        @keyframes slide-up {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .chat-bubble-sent { background-color: #dcf8c6; }
+        .chat-bubble-received { background-color: #ffffff; }
+        .unread-indicator { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .gemini-response {
+            border-left: 4px solid #4f46e5;
+            padding-left: 1rem;
+            margin-top: 1rem;
+            background-color: #f0f2ff;
+        }
+        .gemini-response h5 {
+            font-weight: bold;
+            color: #4f46e5;
+        }
+         .gemini-response ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+        .gemini-response li {
+            margin-bottom: 0.5rem;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #4f46e5;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #qr-reader {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-area-content, #print-area-content * {
+                visibility: visible;
+            }
+            #print-area-content {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="flex items-center justify-center min-h-screen bg-gray-200">
+        <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
+            <div class="text-center">
+                <svg class="mx-auto h-12 w-auto text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-1.007 1.11-1.226.554-.22 1.197-.22 1.752 0 .554.22 1.02.684 1.11 1.226l.094.542c.063.372.363.65.743.765.38.115.784.06.115-.145l.432-.433c.44-.44 1.143-.44 1.584 0 .44.44.44 1.143 0 1.584l-.433.432c-.205.205-.26.505-.145.885.115.38.393.68.765.743l.542.094c.542.09.927.56 1.226 1.11.22.554.22 1.197 0 1.752-.22.554-.684 1.02-1.226 1.11l-.542.094c-.372.063-.65.363-.765.743-.115.38-.06.784.145 1.15l.433.433c.44.44.44 1.143 0 1.584-.44.44-1.143.44-1.584 0l-.432-.433c-.205-.205-.505-.26-.885-.145-.38.115-.68.393-.743.765l-.094.542c-.09.542-.56.927-1.11 1.226-.554-.22-1.197.22-1.752 0-.554-.22-1.02-.684-1.11-1.226l-.094-.542c-.063-.372-.363-.65-.743-.765-.38-.115-.784-.06-1.15.145l-.433.432c-.44-.44-.44 1.143 0 1.584.44.44 1.143.44 1.584 0l.432-.433c.205.205.26-.505.145.885-.115-.38-.393-.68-.765.743l-.542-.094c-.542-.09-1.007-.56-1.226-1.11-.22-.554-.22-1.197 0-1.752.22-.554.684-1.02 1.226-1.11l.542-.094c.372-.063.65-.363.765-.743.115.38.06-.784-.145-1.15l-.433-.432c-.44-.44-.44-1.143 0-1.584.44-.44 1.143.44 1.584 0l.432.433c.205.205.505.26.885.145.38-.115.68-.393.743-.765l.094-.542Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+                <h1 class="text-3xl font-bold text-gray-900 mt-4">Tekniksel</h1>
+                <p class="text-gray-600">Servis Takip Sistemine Hoş Geldiniz</p>
+            </div>
+            <form id="login-form" class="mt-8 space-y-6">
+                <div>
+                    <label for="email" class="sr-only">E-posta</label>
+                    <input id="email" name="email" type="email" autocomplete="email" required class="w-full px-4 py-3 rounded-lg bg-gray-200 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-0" placeholder="E-posta Adresi">
+                </div>
+                <div>
+                    <label for="password" class="sr-only">Şifre</label>
+                    <input id="password" name="password" type="password" autocomplete="current-password" required class="w-full px-4 py-3 rounded-lg bg-gray-200 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-0" placeholder="Şifre">
+                </div>
+                <div id="login-error" class="text-red-500 text-sm hidden"></div>
+                <div>
+                    <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Giriş Yap
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app-container" class="hidden">
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar fixed top-0 left-0 h-full bg-gray-800 text-white w-64 z-30 transform -translate-x-full md:translate-x-0 flex flex-col">
+            <div class="p-4">
+                <div class="flex items-center mb-8">
+                     <svg class="h-8 w-8 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                       <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-1.007 1.11-1.226.554-.22 1.197-.22 1.752 0 .554.22 1.02.684 1.11 1.226l.094.542c.063.372.363.65.743.765.38.115.784.06.115-.145l.432-.433c.44-.44 1.143-.44 1.584 0 .44.44.44 1.143 0 1.584l-.433.432c-.205.205-.26.505-.145.885.115.38.393.68.765.743l.542.094c.542.09.927.56 1.226 1.11.22.554.22 1.197 0 1.752-.22.554-.684 1.02-1.226 1.11l-.542.094c-.372.063-.65.363-.765.743-.115.38-.06.784.145 1.15l.433.433c.44.44.44 1.143 0 1.584-.44.44-1.143.44-1.584 0l-.432-.433c-.205-.205-.505-.26-.885-.145-.38.115-.68.393-.743.765l-.094.542c-.09.542-.56.927-1.11 1.226-.554-.22-1.197.22-1.752 0-.554-.22-1.02-.684-1.11-1.226l-.094-.542c-.063-.372-.363-.65-.743-.765-.38-.115-.784-.06-1.15.145l-.433.432c-.44-.44-.44 1.143 0 1.584.44.44 1.143.44 1.584 0l.432-.433c.205.205.26-.505.145.885-.115-.38-.393-.68-.765.743l-.542-.094c-.542-.09-1.007-.56-1.226-1.11-.22-.554-.22-1.197 0-1.752.22-.554.684-1.02 1.226-1.11l.542-.094c.372-.063.65-.363.765-.743.115.38.06-.784-.145-1.15l-.433-.432c-.44-.44-.44-1.143 0-1.584.44-.44 1.143.44 1.584 0l.432.433c.205.205.505.26.885.145.38-.115.68-.393.743-.765l.094-.542Z" />
+                       <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                    <h1 class="text-xl font-bold ml-2">Tekniksel</h1>
+                </div>
+            </div>
+            <nav id="main-nav" class="flex-grow overflow-y-auto px-4 space-y-2">
+                <!-- Nav items will be injected here -->
+            </nav>
+            <div class="p-4">
+                <div id="user-profile-widget" class="flex items-center p-2 bg-gray-700 rounded-lg">
+                    <!-- User info will be injected here -->
+                </div>
+                <button id="logout-button" class="w-full mt-2 flex items-center justify-center p-2 rounded-lg text-red-400 hover:bg-red-500 hover:text-white transition-colors">
+                    <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" /></svg>
+                    Çıkış Yap
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content" class="main-content md:ml-64 p-4 md:p-8">
+            <!-- Header -->
+            <header class="flex justify-between items-center mb-8">
+                <button id="menu-toggle" class="md:hidden p-2 rounded-md bg-white text-gray-600 shadow-md">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+                </button>
+                <h2 id="page-title" class="text-2xl md:text-3xl font-bold text-gray-800">Ana Sayfa</h2>
+                <div id="clock" class="text-lg font-semibold text-gray-600 bg-white px-4 py-2 rounded-lg shadow-md"></div>
+            </header>
+
+            <!-- Page Content Area -->
+            <main id="page-content">
+                <!-- Pages will be rendered here -->
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modal-container" class="fixed inset-0 z-50 hidden"></div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword,
+            onAuthStateChanged, 
+            signOut 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getDatabase,
+            ref,
+            onValue,
+            get,
+            set,
+            push,
+            update,
+            remove,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDY2mPO2FRgND35rqdDvlTXuuqibAB3rcg",
+            authDomain: "tekniksel-d4cb8.firebaseapp.com",
+            projectId: "tekniksel-d4cb8",
+            storageBucket: "tekniksel-d4cb8.appspot.com",
+            messagingSenderId: "495137655599",
+            appId: "1:495137655599:web:7ac2feb20d9433f2ef2fda",
+            measurementId: "G-KN7MY15CEL",
+            databaseURL: "https://tekniksel-d4cb8-default-rtdb.europe-west1.firebasedatabase.app" // IMPORTANT: Add your Realtime Database URL
+        };
+        
+        // IMPORTANT: Add your Gemini API Key here
+        const GEMINI_API_KEY = "AIzaSyA9MUEDXcnmYK1wUynv_IC0X2Db55qjnXc"; // Paste ONLY your API key here.
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // --- TEMPORARY: Show alert to replace config ---
+        if (firebaseConfig.apiKey.includes("YOUR_API_KEY") || GEMINI_API_KEY === "" || !firebaseConfig.databaseURL) {
+            alert("Lütfen HTML dosyasındaki 'firebaseConfig' (databaseURL dahil) ve 'GEMINI_API_KEY' değişkenlerini kendi proje bilgilerinizle güncelleyin. Aksi takdirde uygulama çalışmayacaktır.");
+        }
+
+        // App State
+        let currentUser = null;
+        let currentUserData = null;
+        let activeChatListener = null;
+        let usersListener = null;
+        let unreadMessages = {};
+        let html5QrCode = null;
+
+
+        // DOM Elements
+        const loginScreen = document.getElementById('login-screen');
+        const appContainer = document.getElementById('app-container');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const pageContent = document.getElementById('page-content');
+        const pageTitle = document.getElementById('page-title');
+        const mainNav = document.getElementById('main-nav');
+        const logoutButton = document.getElementById('logout-button');
+        const clockElement = document.getElementById('clock');
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main-content');
+        const userProfileWidget = document.getElementById('user-profile-widget');
+
+        // --- UTILS ---
+        const formatTimestamp = (timestamp, includeTime = true) => {
+            if (!timestamp) return 'N/A';
+            const date = new Date(timestamp);
+            const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+            if (includeTime) {
+                options.hour = '2-digit';
+                options.minute = '2-digit';
+            }
+            return date.toLocaleDateString('tr-TR', options);
+        };
+        
+        const getLocalDateString = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        const showModal = (content) => {
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.innerHTML = `
+                <div class="modal-bg fixed inset-0 flex items-center justify-center p-4">
+                    <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        ${content}
+                    </div>
+                </div>
+            `;
+            modalContainer.classList.remove('hidden');
+            modalContainer.querySelector('.modal-bg').addEventListener('click', (e) => {
+                if (e.target === modalContainer.querySelector('.modal-bg')) {
+                    hideModal();
+                }
+            });
+             // Attach event listeners to cancel buttons inside the modal
+            modalContainer.querySelectorAll('[data-action="cancel"]').forEach(button => {
+                button.addEventListener('click', hideModal);
+            });
+        };
+
+        const hideModal = () => {
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.classList.add('hidden');
+            modalContainer.innerHTML = '';
+        };
+        
+        // --- GEMINI API CALLER ---
+        const callGeminiAPI = async (prompt, targetElement) => {
+            targetElement.innerHTML = '<div class="flex justify-center items-center p-4"><div class="spinner"></div></div>';
+            targetElement.classList.remove('hidden');
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
+            
+            const payload = {
+                contents: [{
+                    parts: [{ text: prompt }]
+                }]
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const text = result.candidates[0].content.parts[0].text;
+                targetElement.innerHTML = marked.parse(text);
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                targetElement.innerHTML = `<p class="text-red-500">Yapay zeka analizi sırasında bir hata oluştu. Lütfen API anahtarınızı kontrol edin veya daha sonra tekrar deneyin.</p>`;
+            }
+        };
+
+        // --- CLOCK ---
+        const updateClock = () => {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            clockElement.textContent = now.toLocaleDateString('tr-TR', options);
+        };
+        setInterval(updateClock, 1000);
+
+        // --- AUTH ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                const userRef = ref(db, 'users/' + user.uid);
+                get(userRef).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        currentUserData = { id: user.uid, ...snapshot.val() };
+                        initializeAppUI();
+                        loginScreen.classList.add('hidden');
+                        appContainer.classList.remove('hidden');
+                    } else {
+                        console.error("User data not found in Realtime Database!");
+                        signOut(auth);
+                    }
+                });
+            } else {
+                currentUser = null;
+                currentUserData = null;
+                loginScreen.classList.remove('hidden');
+                appContainer.classList.add('hidden');
+            }
+        });
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = loginForm.email.value;
+            const password = loginForm.password.value;
+            signInWithEmailAndPassword(auth, email, password)
+                .catch(error => {
+                    loginError.textContent = "E-posta veya şifre hatalı.";
+                    loginError.classList.remove('hidden');
+                });
+        });
+
+        logoutButton.addEventListener('click', () => {
+            signOut(auth);
+        });
+
+        // --- UI INITIALIZATION ---
+        const initializeAppUI = () => {
+            updateClock();
+            setupNavigation();
+            navigateTo('anasayfa');
+            updateUserProfileWidget();
+            listenForUnreadMessages();
+        };
+
+        const updateUserProfileWidget = () => {
+            userProfileWidget.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-white mr-3">
+                    ${currentUserData.name.charAt(0)}
+                </div>
+                <div>
+                    <p class="font-semibold text-sm">${currentUserData.name}</p>
+                    <p class="text-xs text-gray-400 capitalize">${currentUserData.role.replace('-', ' ')}</p>
+                </div>
+            `;
+        };
+        
+        // --- NAVIGATION ---
+        const navItems = [
+            { id: 'anasayfa', title: 'Ana Sayfa', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h7.5" />', roles: ['admin', 'kısıtlı-yönetici', 'technician'] },
+            { id: 'qr-tara', title: 'QR Tara', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 14.625a1.125 1.125 0 0 1 1.125-1.125h4.5a1.125 1.125 0 0 1 1.125 1.125v4.5a1.125 1.125 0 0 1-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5Z" />', roles: ['admin', 'kısıtlı-yönetici', 'technician'] },
+            { id: 'cihazlar', title: 'Cihaz Takip', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />', roles: ['admin', 'kısıtlı-yönetici', 'technician'] },
+            { id: 'is-emirleri', title: 'İş Emirleri', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 5.25 6h.008a2.25 2.25 0 0 1 2.242 2.135l.002.006a2.25 2.25 0 0 1-.004.007v.002h.004l.002.007a2.25 2.25 0 0 1-2.242 2.135h-.008a2.25 2.25 0 0 1-2.25-2.25v-1.5a2.25 2.25 0 0 1 2.25-2.25Z" />', roles: ['admin', 'kısıtlı-yönetici', 'technician'] },
+            { id: 'takvim', title: 'Takvim', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0h18" />', roles: ['admin', 'kısıtlı-yönetici', 'technician'] },
+            { id: 'nobet-listesi', title: 'Nöbet Listesi', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />', roles: ['admin', 'kısıtlı-yönetici', 'technician'] },
+            { id: 'mesajlar', title: 'Mesajlar', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.068.158 2.148.279 3.238.369.48.033.96.066 1.44.099.48.033.959.066 1.439.099 1.09.09 2.17.211 3.238.369 1.584.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />', roles: ['admin', 'kısıtlı-yönetici', 'technician'] },
+            { id: 'arsiv', title: 'Arşiv', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />', roles: ['admin', 'kısıtlı-yönetici', 'technician'] },
+            { id: 'ayarlar', title: 'Ayarlar', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-1.226.554-.22 1.197-.22 1.752 0 .554.22 1.02.684 1.11 1.226l.094.542c.063.372.363.65.743.765.38.115.784.06.115-.145l.432-.433a1.06 1.06 0 0 1 1.5 0l.432.433c.44.44.44 1.227 0 1.667l-.432.432c-.205.205-.26.506-.145.885.115.38.392.68.765.743l.542.094c.542.09.927.56 1.226 1.11.22.554.22 1.197 0 1.752-.22.554-.684 1.02-1.226 1.11l-.542.094c-.372.063-.65.363-.765.743-.115.38-.06.784.145 1.15l.433.433c.44.44.44 1.227 0 1.667l-.432.432a1.06 1.06 0 0 1-1.5 0l-.432-.433c-.205-.205-.506-.26-.885-.145-.38.115-.68.392-.743.765l-.094.542c-.09.542-.56.927-1.11 1.226-.554-.22-1.197.22-1.752 0-.554-.22-1.02-.684-1.11-1.226l-.094-.542c-.063-.372-.363-.65-.743-.765-.38-.115-.784-.06-1.15.145l-.432.432a1.06 1.06 0 0 1-1.5 0l-.432-.433c-.44-.44-.44-1.227 0-1.667l.432-.432c.205-.205.26-.506.145-.885-.115-.38-.392-.68-.765.743l-.542-.094c-.542-.09-1.007-.56-1.226-1.11-.22-.554-.22-1.197 0-1.752.22-.554.684-1.02 1.226 1.11l.542-.094c.372-.063.65-.363.765-.743.115.38.06-.784-.145-1.15l-.432-.432a1.06 1.06 0 0 1 0-1.667l.432-.432c.44-.44 1.227-.44 1.667 0l.432.432c.205.205.506.26.885.145.38-.115.68-.392.743-.765l.094-.542Z" />', roles: ['admin', 'kısıtlı-yönetici'] },
+        ];
+
+        const setupNavigation = () => {
+            mainNav.innerHTML = '';
+            navItems.forEach(item => {
+                if (item.roles.includes(currentUserData.role)) {
+                    const link = document.createElement('a');
+                    link.href = '#';
+                    link.dataset.page = item.id;
+                    link.className = 'nav-link flex items-center p-3 rounded-lg hover:bg-gray-700 transition-colors';
+                    link.innerHTML = `
+                        <svg class="h-6 w-6 mr-3 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">${item.icon}</svg>
+                        <span>${item.title}</span>
+                        ${item.id === 'mesajlar' ? '<span id="mesajlar-unread" class="ml-auto w-3 h-3 bg-red-500 rounded-full hidden unread-indicator"></span>' : ''}
+                    `;
+                    mainNav.appendChild(link);
+                }
+            });
+        };
+
+        mainNav.addEventListener('click', (e) => {
+            const link = e.target.closest('.nav-link');
+            if (link) {
+                e.preventDefault();
+                navigateTo(link.dataset.page);
+                if (window.innerWidth < 768) {
+                    sidebar.classList.add('-translate-x-full');
+                }
+            }
+        });
+
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+        });
+
+        const stopQRScanner = () => {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().catch(err => console.error("QR Scanner stop failed.", err));
+            }
+        };
+
+        const navigateTo = (pageId) => {
+            stopQRScanner(); // Stop scanner on any navigation
+            const navItem = navItems.find(item => item.id === pageId);
+            if (!navItem) return;
+
+            pageTitle.textContent = navItem.title;
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('bg-gray-900', 'text-white'));
+            document.querySelector(`.nav-link[data-page="${pageId}"]`).classList.add('bg-gray-900', 'text-white');
+
+            switch (pageId) {
+                case 'anasayfa': renderHomePage(); break;
+                case 'qr-tara': renderQRScannerPage(); break;
+                case 'cihazlar': renderDevicesPage(); break;
+                case 'is-emirleri': renderWorkOrdersPage(); break;
+                case 'takvim': renderCalendarPage(); break;
+                case 'nobet-listesi': renderDutyListPage(); break;
+                case 'mesajlar': renderMessagesPage(); break;
+                case 'arsiv': renderArchivePage(); break;
+                case 'ayarlar': renderSettingsPage(); break;
+            }
+        };
+
+        // --- PAGE RENDERERS ---
+
+        const renderHomePage = async () => {
+            pageContent.innerHTML = `<div class="text-center p-10"><div class="spinner mx-auto"></div></div>`;
+            
+            const [workOrdersSnap, dutiesSnap, usersSnap, announcementsSnap] = await Promise.all([
+                get(ref(db, 'workOrders')),
+                get(ref(db, 'duties')),
+                get(ref(db, 'users')),
+                get(ref(db, 'announcements'))
+            ]);
+
+            const allWorkOrders = workOrdersSnap.val() || {};
+            const allDuties = dutiesSnap.val() || {};
+            const usersMap = new Map(Object.entries(usersSnap.val() || {}));
+            const allAnnouncements = announcementsSnap.val() || {};
+
+            // Yaklaşan Etkinlikler
+            let events = [];
+            const now = new Date();
+            const todayStr = getLocalDateString(now);
+
+            Object.entries(allWorkOrders).forEach(([id, data]) => {
+                if ((data.status !== "Tamamlandı" && data.status !== "İptal Edildi") && (data.assignedTo === currentUser.uid || currentUserData.role !== 'technician')) {
+                    events.push({ id: id, type: 'iş emri', date: new Date(data.createdAt), title: data.description, assignee: usersMap.get(data.assignedTo)?.name || 'Atanmamış', device: data.deviceName || 'Bilinmiyor' });
+                }
+            });
+            Object.entries(allDuties).forEach(([id, data]) => {
+                 if (new Date(data.date) >= new Date(todayStr)) {
+                     events.push({ id: id, type: 'nöbet', date: new Date(data.date + 'T00:00:00'), title: `${usersMap.get(data.userId)?.name || 'Bilinmeyen'} - ${data.dutyType} Nöbeti` });
+                }
+            });
+             Object.entries(allAnnouncements).forEach(([id, data]) => {
+                 if (new Date(data.date) >= new Date(todayStr)) {
+                     events.push({ id: id, type: 'duyuru', date: new Date(data.date + 'T00:00:00'), title: data.text });
+                }
+            });
+
+            events.sort((a, b) => a.date - b.date);
+            let upcomingHtml = events.length > 0 ? events.map(event => {
+                const eventColors = {
+                    'iş emri': 'bg-blue-100 text-blue-800',
+                    'nöbet': 'bg-green-100 text-green-800',
+                    'duyuru': 'bg-purple-100 text-purple-800'
+                };
+                return `
+                <div class="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer" data-id="${event.id}" data-type="${event.type}">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full ${eventColors[event.type]}">${event.type.charAt(0).toUpperCase() + event.type.slice(1)}</span>
+                            <h4 class="font-bold text-lg mt-2 text-gray-800">${event.title}</h4>
+                            ${event.type === 'iş emri' ? `<p class="text-sm text-gray-500">${event.device} - Atanan: ${event.assignee}</p>` : ''}
+                        </div>
+                        <div class="text-right text-sm text-gray-600">
+                            <p>${formatTimestamp(event.date, false)}</p>
+                            <p class="font-medium">${formatTimestamp(event.date).split(' ')[1] || ''}</p>
+                        </div>
+                    </div>
+                </div>`}).join('') : '<p class="text-gray-500 text-center p-4">Yaklaşan bir etkinlik bulunmuyor.</p>';
+
+            // Nöbetçi Listesi
+            const tomorrow = new Date();
+            tomorrow.setDate(now.getDate() + 1);
+            const tomorrowStr = getLocalDateString(tomorrow);
+            
+            const renderDutyList = (dateStr, title) => {
+                const duties = Object.values(allDuties).filter(d => d.date === dateStr);
+                let dutyHtml = `<div><h4 class="font-bold text-gray-700 mb-2">${title}</h4>`;
+                if(duties.length > 0) {
+                    dutyHtml += `<ul class="space-y-2">` + duties.map(duty => `
+                        <li class="flex items-center justify-between p-2 bg-gray-100 rounded-md">
+                            <span>${usersMap.get(duty.userId)?.name || 'Bilinmeyen'}</span>
+                            <span class="text-sm font-semibold text-indigo-600">${duty.dutyType}</span>
+                        </li>
+                    `).join('') + `</ul>`;
+                } else {
+                    dutyHtml += `<p class="text-sm text-gray-500">Nöbetçi atanmamış.</p>`;
+                }
+                dutyHtml += `</div>`;
+                return dutyHtml;
+            };
+
+            const todayDutiesHtml = renderDutyList(todayStr, "Bugünkü Nöbetçiler");
+            const tomorrowDutiesHtml = renderDutyList(tomorrowStr, "Yarınki Nöbetçiler");
+
+            pageContent.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Yaklaşan Etkinlikler</h3>
+                        <div id="upcoming-events-list" class="space-y-4 max-h-96 overflow-y-auto">${upcomingHtml}</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Nöbetçi Listesi</h3>
+                        <div class="space-y-4">
+                            ${todayDutiesHtml}
+                            ${tomorrowDutiesHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('upcoming-events-list').addEventListener('click', e => {
+                const item = e.target.closest('[data-id]');
+                if(item) {
+                    const {id, type} = item.dataset;
+                    if(type === 'iş emri') {
+                        navigateTo('is-emirleri');
+                        setTimeout(() => showWorkOrderDetail(id), 100);
+                    }
+                }
+            });
+        };
+
+        const renderQRScannerPage = () => {
+            pageContent.innerHTML = `
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">QR Kodu Okutun</h3>
+                    <div id="qr-reader"></div>
+                    <div id="qr-reader-results" class="text-center mt-4 font-semibold"></div>
+                </div>
+            `;
+
+            const onScanSuccess = (decodedText, decodedResult) => {
+                const resultsEl = document.getElementById('qr-reader-results');
+                resultsEl.textContent = `Kod okundu, bilgiler getiriliyor...`;
+                stopQRScanner();
+                try {
+                    const data = JSON.parse(decodedText);
+                    if (data.type === 'device' && data.id) {
+                        window.showDeviceDetail(data.id);
+                    } else {
+                        resultsEl.textContent = 'Geçersiz QR Kod Formatı.';
+                    }
+                } catch (e) {
+                    resultsEl.textContent = 'Hata: QR kod içeriği okunamadı.';
+                }
+            };
+            
+            const onScanFailure = (error) => {
+                // console.warn(`QR code scan error = ${error}`);
+            };
+
+            html5QrCode = new Html5Qrcode("qr-reader");
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, onScanFailure)
+                .catch(err => console.log("QR Scanner start failed.", err));
+        };
+        
+        const renderDevicesPage = () => {
+             pageContent.innerHTML = `<div class="text-center p-10"><div class="spinner mx-auto"></div></div>`;
+             
+             const devicesRef = ref(db, 'devices');
+             onValue(devicesRef, (snapshot) => {
+                const devicesData = snapshot.val() || {};
+                let devices = Object.keys(devicesData).map(key => ({ id: key, ...devicesData[key] }));
+
+                const renderTable = (filteredDevices) => {
+                    const tableBody = filteredDevices.length > 0 ? filteredDevices.map(device => `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="p-4">${device.name}</td>
+                            <td class="p-4 text-gray-600">${device.serial}</td>
+                            <td class="p-4 text-gray-600">${device.categoryName || 'N/A'}</td>
+                            <td class="p-4 text-gray-600">${device.locationName || 'N/A'}</td>
+                            <td class="p-4">
+                                <button class="text-indigo-600 hover:text-indigo-900" onclick="window.showDeviceDetail('${device.id}')">Detay</button>
+                            </td>
+                        </tr>
+                    `).join('') : `<tr><td colspan="5" class="text-center p-6 text-gray-500">Kayıtlı cihaz bulunamadı.</td></tr>`;
+
+                    pageContent.innerHTML = `
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                                <div class="relative w-full md:w-1/2">
+                                    <input type="text" id="device-filter" placeholder="Cihaz adı, seri no, kategori veya konuma göre filtrele..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <svg class="w-5 h-5 text-gray-400 absolute top-1/2 left-3 transform -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
+                                </div>
+                                <div class="flex gap-2 w-full md:w-auto">
+                                    <button id="export-excel-btn" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">Excel'e Aktar</button>
+                                    ${currentUserData.role !== 'technician' ? `<button id="add-device-btn" class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center">Yeni Cihaz</button>` : ''}
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table id="devices-table" class="w-full text-left">
+                                    <thead class="bg-gray-50 text-gray-600 uppercase text-sm">
+                                        <tr>
+                                            <th class="p-4 font-semibold">Cihaz Adı</th>
+                                            <th class="p-4 font-semibold">Seri Numarası</th>
+                                            <th class="p-4 font-semibold">Kategori</th>
+                                            <th class="p-4 font-semibold">Konum</th>
+                                            <th class="p-4 font-semibold">İşlemler</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="devices-table-body" class="text-gray-800">${tableBody}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+
+                    if (currentUserData.role !== 'technician') {
+                        document.getElementById('add-device-btn').addEventListener('click', showAddDeviceModal);
+                    }
+                    document.getElementById('export-excel-btn').addEventListener('click', () => exportTableToCSV('devices-table', 'cihaz-listesi.csv'));
+                    
+                    document.getElementById('device-filter').addEventListener('input', (e) => {
+                        const filterText = e.target.value.toLowerCase();
+                        const filtered = devices.filter(d => 
+                            d.name.toLowerCase().includes(filterText) ||
+                            d.serial.toLowerCase().includes(filterText) ||
+                            (d.categoryName && d.categoryName.toLowerCase().includes(filterText)) ||
+                            (d.locationName && d.locationName.toLowerCase().includes(filterText))
+                        );
+                        // Re-render only the table body for performance
+                        document.getElementById('devices-table-body').innerHTML = filtered.length > 0 ? filtered.map(device => `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="p-4">${device.name}</td>
+                                <td class="p-4 text-gray-600">${device.serial}</td>
+                                <td class="p-4 text-gray-600">${device.categoryName || 'N/A'}</td>
+                                <td class="p-4 text-gray-600">${device.locationName || 'N/A'}</td>
+                                <td class="p-4">
+                                    <button class="text-indigo-600 hover:text-indigo-900" onclick="window.showDeviceDetail('${device.id}')">Detay</button>
+                                </td>
+                            </tr>
+                        `).join('') : `<tr><td colspan="5" class="text-center p-6 text-gray-500">Filtreyle eşleşen cihaz bulunamadı.</td></tr>`;
+                    });
+                };
+                renderTable(devices);
+             });
+        };
+
+        const renderCalendarPage = () => {
+            pageContent.innerHTML = `<div id="calendar-container"></div>`;
+            const calendarContainer = document.getElementById('calendar-container');
+            
+            let date = new Date();
+
+            const render = async () => {
+                date.setDate(1);
+                const month = date.getMonth();
+                const year = date.getFullYear();
+
+                const firstDay = new Date(year, month, 1).getDay();
+                const lastDate = new Date(year, month + 1, 0).getDate();
+                const prevLastDate = new Date(year, month, 0).getDate();
+                
+                const dayOffset = (firstDay === 0) ? 6 : firstDay - 1;
+
+                const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+                
+                const [dutiesSnap, usersSnap, announcementsSnap] = await Promise.all([
+                    get(ref(db, 'duties')),
+                    get(ref(db, 'users')),
+                    get(ref(db, 'announcements'))
+                ]);
+
+                const allDuties = dutiesSnap.val() || {};
+                const usersMap = new Map(Object.entries(usersSnap.val() || {}));
+                const allAnnouncements = announcementsSnap.val() || {};
+                
+                let eventsByDate = {};
+                Object.values(allDuties).forEach(data => {
+                    if (!eventsByDate[data.date]) eventsByDate[data.date] = [];
+                    eventsByDate[data.date].push({
+                        type: 'duty',
+                        user: usersMap.get(data.userId)?.name || 'Bilinmeyen',
+                        text: data.dutyType
+                    });
+                });
+                Object.values(allAnnouncements).forEach(data => {
+                    if (!eventsByDate[data.date]) eventsByDate[data.date] = [];
+                    eventsByDate[data.date].push({
+                        type: 'announcement',
+                        text: data.text
+                    });
+                });
+
+                let days = "";
+                for (let x = dayOffset; x > 0; x--) {
+                    days += `<div class="p-2 h-28 border bg-gray-50 text-gray-400">${prevLastDate - x + 1}</div>`;
+                }
+
+                for (let i = 1; i <= lastDate; i++) {
+                    const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                    const eventsHtml = (eventsByDate[currentDateStr] || []).map(event => {
+                        if (event.type === 'duty') {
+                            return `<div class="text-xs p-1 bg-green-100 text-green-800 rounded-md truncate">${event.user} - ${event.text}</div>`;
+                        } else {
+                            return `<div class="text-xs p-1 bg-purple-100 text-purple-800 rounded-md truncate">${event.text}</div>`;
+                        }
+                    }).join('');
+                    
+                    days += `
+                        <div class="p-2 h-28 border relative cursor-pointer hover:bg-indigo-50" data-date="${currentDateStr}">
+                            <div class="font-semibold">${i}</div>
+                            <div class="mt-1 space-y-1">${eventsHtml}</div>
+                        </div>
+                    `;
+                }
+                
+                const totalCells = dayOffset + lastDate;
+                const remainingCells = 7 - (totalCells % 7);
+                if (remainingCells < 7) {
+                    for (let i = 1; i <= remainingCells; i++) {
+                        days += `<div class="p-2 h-28 border bg-gray-50 text-gray-400">${i}</div>`;
+                    }
+                }
+
+                calendarContainer.innerHTML = `
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <div class="flex justify-between items-center mb-4">
+                            <button id="prev-month" class="p-2 rounded-full hover:bg-gray-200">&lt;</button>
+                            <h3 class="text-xl font-bold">${monthNames[month]} ${year}</h3>
+                            <button id="next-month" class="p-2 rounded-full hover:bg-gray-200">&gt;</button>
+                        </div>
+                        <div class="grid grid-cols-7 text-center font-semibold text-gray-600 mb-2">
+                            <div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
+                        </div>
+                        <div id="calendar-grid" class="grid grid-cols-7 text-sm">${days}</div>
+                    </div>
+                `;
+
+                document.getElementById('prev-month').onclick = () => { date.setMonth(month - 1); render(); };
+                document.getElementById('next-month').onclick = () => { date.setMonth(month + 1); render(); };
+
+                document.getElementById('calendar-grid').addEventListener('click', (e) => {
+                    const dayCell = e.target.closest('[data-date]');
+                    if (dayCell) {
+                        window.showDayActionMenu(dayCell.dataset.date, render);
+                    }
+                });
+            };
+            render();
+        };
+
+        const renderWorkOrdersPage = () => {
+            pageContent.innerHTML = `<div class="text-center p-10"><div class="spinner mx-auto"></div></div>`;
+            const workOrdersRef = ref(db, 'workOrders');
+            
+            onValue(workOrdersRef, async (snapshot) => {
+                const workOrdersData = snapshot.val() || {};
+                
+                const usersSnap = await get(ref(db, 'users'));
+                const usersMap = new Map(Object.entries(usersSnap.val() || {}));
+                
+                let workOrders = Object.entries(workOrdersData)
+                    .map(([id, data]) => ({ id, ...data }))
+                    .filter(wo => wo.status !== "Tamamlandı" && wo.status !== "İptal Edildi")
+                    .sort((a,b) => b.createdAt - a.createdAt);
+
+                const listHtml = workOrders.length > 0 ? workOrders.map(wo => {
+                    const statusColors = {
+                        "Bekliyor": "bg-yellow-100 text-yellow-800",
+                        "Başlandı": "bg-blue-100 text-blue-800",
+                    };
+                    return `
+                    <div class="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer" onclick="window.showWorkOrderDetail('${wo.id}')">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-lg text-gray-800">${wo.deviceName}</h4>
+                                <p class="text-sm text-gray-600">${wo.description}</p>
+                                <p class="text-xs text-gray-500 mt-2">Atanan: ${usersMap.get(wo.assignedTo)?.name || 'N/A'} | Oluşturulma: ${formatTimestamp(wo.createdAt)}</p>
+                            </div>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColors[wo.status] || 'bg-gray-100 text-gray-800'}">${wo.status}</span>
+                        </div>
+                    </div>
+                `}).join('') : `<p class="text-gray-500 text-center">Aktif iş emri bulunmuyor.</p>`;
+
+                pageContent.innerHTML = `
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                         <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-gray-800">Aktif İş Emirleri</h3>
+                            <button id="add-wo-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center">Yeni İş Emri Oluştur</button>
+                         </div>
+                         <div class="space-y-4">${listHtml}</div>
+                    </div>
+                `;
+                document.getElementById('add-wo-btn').addEventListener('click', () => window.showCreateWorkOrderModal());
+            });
+        };
+        
+        const renderDutyListPage = () => {
+            pageContent.innerHTML = `<div class="text-center p-10"><div class="spinner mx-auto"></div></div>`;
+            
+            const dutiesRef = ref(db, 'duties');
+            onValue(dutiesRef, async (snapshot) => {
+                const dutiesData = snapshot.val() || {};
+                const usersSnap = await get(ref(db, 'users'));
+                const usersMap = new Map(Object.entries(usersSnap.val() || {}));
+                
+                let duties = Object.entries(dutiesData)
+                    .map(([id, data]) => ({ id, ...data }))
+                    .sort((a,b) => new Date(b.date) - new Date(a.date));
+
+                const tableBody = duties.length > 0 ? duties.map(duty => `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-4">${new Date(duty.date + 'T00:00:00').toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric', weekday: 'long' })}</td>
+                        <td class="p-4 text-gray-600">${usersMap.get(duty.userId)?.name || 'Bilinmeyen'}</td>
+                        <td class="p-4 text-gray-600">${duty.dutyType}</td>
+                        ${currentUserData.role === 'admin' ? `
+                        <td class="p-4">
+                            <button class="text-blue-600 hover:text-blue-900 mr-2" onclick="window.showEditDutyModal('${duty.id}')">Düzenle</button>
+                            <button class="text-red-600 hover:text-red-900" onclick="window.deleteDuty('${duty.id}')">Sil</button>
+                        </td>` : '<td class="p-4"></td>'}
+                    </tr>
+                `).join('') : `<tr><td colspan="4" class="text-center p-6 text-gray-500">Kayıtlı nöbet bulunamadı.</td></tr>`;
+
+                pageContent.innerHTML = `
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-gray-800">Tüm Nöbetler</h3>
+                             ${currentUserData.role === 'admin' ? `<button id="add-duty-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center">Yeni Nöbet Ekle</button>` : ''}
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-gray-50 text-gray-600 uppercase text-sm">
+                                    <tr>
+                                        <th class="p-4 font-semibold">Tarih</th>
+                                        <th class="p-4 font-semibold">Teknisyen</th>
+                                        <th class="p-4 font-semibold">Nöbet Tipi</th>
+                                        ${currentUserData.role === 'admin' ? `<th class="p-4 font-semibold">İşlemler</th>` : '<th class="p-4 font-semibold"></th>'}
+                                    </tr>
+                                </thead>
+                                <tbody class="text-gray-800">${tableBody}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                if (currentUserData.role === 'admin') {
+                    document.getElementById('add-duty-btn').addEventListener('click', () => window.showAddDutyModal(null, renderDutyListPage));
+                }
+            });
+        };
+
+        const renderMessagesPage = () => {
+             pageContent.innerHTML = `
+                <div class="bg-white rounded-xl shadow-lg h-[75vh] flex">
+                    <div id="users-list-container" class="w-1/3 border-r overflow-y-auto">
+                        <div class="p-4 border-b"><h3 class="font-bold text-lg">Sohbetler</h3></div>
+                        <div id="users-list"><div class="p-4 text-center text-gray-500">Kullanıcılar yükleniyor...</div></div>
+                    </div>
+                    <div id="chat-area-container" class="w-2/3 flex flex-col">
+                        <div id="chat-area-placeholder" class="flex-grow flex items-center justify-center text-gray-500">Sohbet başlatmak için bir kullanıcı seçin.</div>
+                        <div id="chat-area" class="hidden flex-grow flex flex-col"></div>
+                    </div>
+                </div>
+            `;
+            
+            if (usersListener) usersListener();
+            
+            usersListener = onValue(ref(db, 'users'), (snapshot) => {
+                const usersList = document.getElementById('users-list');
+                usersList.innerHTML = '';
+                const usersData = snapshot.val() || {};
+                Object.entries(usersData).forEach(([id, user]) => {
+                    if (id !== currentUser.uid) {
+                        const isUnread = unreadMessages[id];
+                        const userElement = document.createElement('div');
+                        userElement.className = 'flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b';
+                        userElement.dataset.userId = id;
+                        userElement.dataset.userName = user.name;
+                        userElement.innerHTML = `
+                            <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center font-bold text-gray-600 mr-3">${user.name.charAt(0)}</div>
+                            <div class="flex-grow"><p class="font-semibold">${user.name}</p></div>
+                            ${isUnread ? `<div class="w-3 h-3 bg-blue-500 rounded-full unread-indicator" data-unread-dot="${id}"></div>` : ''}
+                        `;
+                        userElement.addEventListener('click', () => {
+                            const { userId, userName } = userElement.dataset;
+                            openChat(userId, userName);
+                        });
+                        usersList.appendChild(userElement);
+                    }
+                });
+            });
+        };
+
+        const renderArchivePage = async () => {
+            pageContent.innerHTML = `<div class="text-center p-10"><div class="spinner mx-auto"></div></div>`;
+            const workOrdersSnap = await get(ref(db, 'workOrders'));
+            const workOrdersData = workOrdersSnap.val() || {};
+
+            const archivedOrders = Object.values(workOrdersData)
+                .filter(wo => wo.status === "Tamamlandı")
+                .sort((a,b) => b.completedAt - a.completedAt);
+
+            if (archivedOrders.length === 0) {
+                pageContent.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-lg text-center text-gray-500">Arşivde iş emri bulunmuyor.</div>`;
+                return;
+            }
+
+            const listHtml = archivedOrders.map(wo => `
+                <div class="bg-white p-4 rounded-lg shadow-sm opacity-70">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-bold text-lg text-gray-700">${wo.deviceName}</h4>
+                            <p class="text-sm text-gray-500">${wo.description}</p>
+                            <p class="text-xs text-gray-400 mt-2">Tamamlanma: ${formatTimestamp(wo.completedAt)}</p>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-800">Tamamlandı</span>
+                    </div>
+                </div>
+            `).join('');
+
+            pageContent.innerHTML = `
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                     <h3 class="text-xl font-bold text-gray-800 mb-4">Arşivlenmiş İş Emirleri</h3>
+                     <div class="space-y-4">${listHtml}</div>
+                </div>
+            `;
+        };
+        
+        const renderSettingsPage = async () => {
+            pageContent.innerHTML = `<div class="text-center p-10"><div class="spinner mx-auto"></div></div>`;
+            
+            const [usersSnap, categoriesSnap, locationsSnap, companyInfoSnap] = await Promise.all([
+                get(ref(db, 'users')),
+                get(ref(db, 'settings/categories')),
+                get(ref(db, 'settings/locations')),
+                get(ref(db, 'settings/companyInfo'))
+            ]);
+
+            const users = Object.entries(usersSnap.val() || {}).map(([id, data]) => ({id, ...data}));
+            const categories = Object.entries(categoriesSnap.val() || {}).map(([id, data]) => ({id, ...data}));
+            const locations = Object.entries(locationsSnap.val() || {}).map(([id, data]) => ({id, ...data}));
+            const companyInfo = companyInfoSnap.val() || { name: '', phone: '', email: '', website: '' };
+
+            const renderListItem = (item, type) => `
+                <li class="flex justify-between items-center p-2 bg-gray-100 rounded-md">
+                    <span>${item.name}</span>
+                    <button class="text-red-500 hover:text-red-700" onclick="window.deleteSettingItem('${item.id}', '${type}')">Sil</button>
+                </li>
+            `;
+            
+            const userManagementHtml = currentUserData.role === 'admin' ? `
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold mb-4">Kullanıcı Yönetimi</h3>
+                    <ul class="space-y-2 mb-4">
+                        ${users.map(u => `
+                            <li class="flex justify-between items-center p-2 bg-gray-100 rounded-md">
+                                <div>
+                                    <p class="font-semibold">${u.name}</p>
+                                    <p class="text-sm text-gray-500">${u.email} - <span class="capitalize">${u.role.replace('-', ' ')}</span></p>
+                                </div>
+                                ${u.id !== currentUser.uid ? `<button class="text-red-500 hover:text-red-700" onclick="window.deleteUser('${u.id}')">Sil</button>` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                    <button id="add-user-btn" class="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Yeni Kullanıcı Ekle</button>
+                </div>
+            ` : '';
+
+            pageContent.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    ${userManagementHtml}
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold mb-4">Şirket Bilgileri (Etiket için)</h3>
+                        <form id="company-info-form" class="space-y-4">
+                            <input type="text" name="name" placeholder="Şirket Adı" value="${companyInfo.name}" class="w-full p-2 border rounded-md">
+                            <input type="text" name="phone" placeholder="Telefon" value="${companyInfo.phone}" class="w-full p-2 border rounded-md">
+                            <input type="email" name="email" placeholder="E-posta" value="${companyInfo.email}" class="w-full p-2 border rounded-md">
+                            <input type="text" name="website" placeholder="Web Sitesi" value="${companyInfo.website}" class="w-full p-2 border rounded-md">
+                            <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Kaydet</button>
+                        </form>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold mb-4">Cihaz Kategorileri</h3>
+                        <ul id="categories-list" class="space-y-2 mb-4">${categories.map(c => renderListItem(c, 'categories')).join('')}</ul>
+                        <form id="add-category-form" class="flex gap-2">
+                            <input type="text" name="name" placeholder="Yeni Kategori" class="flex-grow p-2 border rounded-md" required>
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Ekle</button>
+                        </form>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold mb-4">Cihaz Konumları</h3>
+                        <ul id="locations-list" class="space-y-2 mb-4">${locations.map(l => renderListItem(l, 'locations')).join('')}</ul>
+                        <form id="add-location-form" class="flex gap-2">
+                            <input type="text" name="name" placeholder="Yeni Konum" class="flex-grow p-2 border rounded-md" required>
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Ekle</button>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            if (currentUserData.role === 'admin') {
+                document.getElementById('add-user-btn').addEventListener('click', showAddUserModal);
+            }
+            document.getElementById('company-info-form').addEventListener('submit', saveCompanyInfo);
+            document.getElementById('add-category-form').addEventListener('submit', e => addSettingItem(e, 'categories'));
+            document.getElementById('add-location-form').addEventListener('submit', e => addSettingItem(e, 'locations'));
+        };
+
+        // --- MODAL & DETAIL FUNCTIONS ---
+
+        window.showDeviceDetail = async (deviceId) => {
+            const deviceSnap = await get(ref(db, `devices/${deviceId}`));
+            if (!deviceSnap.exists()) return;
+            const device = { id: deviceId, ...deviceSnap.val() };
+            
+            const workOrdersSnap = await get(ref(db, 'workOrders'));
+            const allWorkOrders = workOrdersSnap.val() || {};
+            const history = Object.values(allWorkOrders)
+                .filter(wo => wo.deviceId === deviceId)
+                .sort((a,b) => b.createdAt - a.createdAt);
+
+            const modalContent = `
+                <div class="p-6">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-2xl font-bold text-gray-800">${device.name}</h3>
+                        <button data-action="cancel" class="p-2 rounded-full hover:bg-gray-200">&times;</button>
+                    </div>
+                    <p class="text-gray-500 mb-4">Seri No: ${device.serial}</p>
+                    <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+                        <div><strong class="block text-gray-500">Kategori</strong> ${device.categoryName || 'N/A'}</div>
+                        <div><strong class="block text-gray-500">Konum</strong> ${device.locationName || 'N/A'}</div>
+                        <div><strong class="block text-gray-500">Eklenme Tarihi</strong> ${formatTimestamp(device.createdAt)}</div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2 mb-6">
+                        <button class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700" onclick="window.showCreateWorkOrderModal('${device.id}', '${device.name}')">Arıza Kaydı Aç</button>
+                        <button class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700" onclick="window.showPrintLabelModal('${device.id}')">QR Etiket Bas</button>
+                    </div>
+                    <h4 class="font-bold text-lg mb-2">Servis Geçmişi</h4>
+                    <div class="space-y-3 max-h-60 overflow-y-auto">
+                        ${history.length > 0 ? history.map(h => `
+                            <div class="p-3 bg-gray-100 rounded-md">
+                                <p class="font-semibold">${h.description}</p>
+                                <p class="text-xs text-gray-500">${formatTimestamp(h.createdAt)} - Durum: ${h.status}</p>
+                            </div>
+                        `).join('') : '<p class="text-gray-500">Servis geçmişi bulunmuyor.</p>'}
+                    </div>
+                </div>
+            `;
+            showModal(modalContent);
+        };
+        
+        const showAddDeviceModal = async () => {
+             const [categoriesSnap, locationsSnap] = await Promise.all([
+                get(ref(db, 'settings/categories')),
+                get(ref(db, 'settings/locations'))
+            ]);
+            const categories = Object.entries(categoriesSnap.val() || {}).map(([id, data]) => ({id, ...data}));
+            const locations = Object.entries(locationsSnap.val() || {}).map(([id, data]) => ({id, ...data}));
+
+            const modalContent = `
+                <form id="add-device-form" class="p-6 space-y-4">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">Yeni Cihaz Ekle</h3>
+                    <input type="text" name="name" placeholder="Cihaz Adı" required class="w-full p-2 border rounded-md">
+                    <input type="text" name="serial" placeholder="Seri Numarası" required class="w-full p-2 border rounded-md">
+                    <select name="categoryId" required class="w-full p-2 border rounded-md">
+                        <option value="">Kategori Seçin</option>
+                        ${categories.map(c => `<option value="${c.id}" data-name="${c.name}">${c.name}</option>`).join('')}
+                    </select>
+                    <select name="locationId" required class="w-full p-2 border rounded-md">
+                        <option value="">Konum Seçin</option>
+                        ${locations.map(l => `<option value="${l.id}" data-name="${l.name}">${l.name}</option>`).join('')}
+                    </select>
+                    <textarea name="details" placeholder="Cihaz Detayları" class="w-full p-2 border rounded-md"></textarea>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-action="cancel" class="bg-gray-300 px-4 py-2 rounded-lg">İptal</button>
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Kaydet</button>
+                    </div>
+                </form>
+            `;
+            showModal(modalContent);
+            document.getElementById('add-device-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const categorySelect = form.categoryId;
+                const locationSelect = form.locationId;
+                const newDeviceRef = push(ref(db, 'devices'));
+                const newDevice = {
+                    name: form.name.value,
+                    serial: form.serial.value,
+                    categoryId: categorySelect.value,
+                    categoryName: categorySelect.options[categorySelect.selectedIndex].dataset.name,
+                    locationId: locationSelect.value,
+                    locationName: locationSelect.options[locationSelect.selectedIndex].dataset.name,
+                    details: form.details.value,
+                    createdAt: serverTimestamp()
+                };
+                await set(newDeviceRef, newDevice);
+                hideModal();
+            });
+        };
+
+        window.showPrintLabelModal = async (deviceId) => {
+            const [deviceSnap, companyInfoSnap] = await Promise.all([
+                get(ref(db, `devices/${deviceId}`)),
+                get(ref(db, 'settings/companyInfo'))
+            ]);
+            if (!deviceSnap.exists()) return;
+            const device = deviceSnap.val();
+            const companyInfo = companyInfoSnap.val() || {};
+
+            const modalContent = `
+                <div id="print-area">
+                    <div id="print-area-content" class="p-6">
+                        <div class="border-2 border-dashed border-gray-400 p-4 w-[320px] mx-auto">
+                            <h3 class="text-center font-bold text-lg">${companyInfo.name || 'Şirket Adı'}</h3>
+                            <hr class="my-2">
+                            <p class="text-center font-semibold text-xl">${device.name}</p>
+                            <p class="text-center text-sm text-gray-600">S/N: ${device.serial}</p>
+                            <div id="qrcode-container" class="flex justify-center my-4"></div>
+                            <div class="text-xs text-center text-gray-500">
+                                <p>${companyInfo.phone || ''}</p>
+                                <p>${companyInfo.email || ''}</p>
+                                <p>${companyInfo.website || ''}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 bg-gray-50 flex justify-end gap-2">
+                    <button type="button" data-action="cancel" class="bg-gray-300 px-4 py-2 rounded-lg">Kapat</button>
+                    <button type="button" onclick="window.printLabel()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Yazdır</button>
+                </div>
+            `;
+            showModal(modalContent);
+            
+            new QRCode(document.getElementById("qrcode-container"), {
+                text: JSON.stringify({ type: 'device', id: deviceId }),
+                width: 128,
+                height: 128,
+            });
+        };
+
+        window.printLabel = () => {
+            window.print();
+        };
+
+        window.showCreateWorkOrderModal = async (deviceId = null, deviceName = '') => {
+            const usersSnap = await get(ref(db, 'users'));
+            const users = Object.entries(usersSnap.val() || {}).map(([id, data]) => ({id, ...data}));
+            
+            let deviceSelectionHtml = '';
+            if (!deviceId) {
+                const devicesSnap = await get(ref(db, 'devices'));
+                const devices = Object.entries(devicesSnap.val() || {}).map(([id, data]) => ({id, ...data}));
+                deviceSelectionHtml = `
+                    <select name="deviceId" required class="w-full p-2 border rounded-md">
+                        <option value="">Cihaz Seçin</option>
+                        ${devices.map(d => `<option value="${d.id}" data-name="${d.name}">${d.name} (S/N: ${d.serial})</option>`).join('')}
+                    </select>
+                `;
+            }
+
+            const modalContent = `
+                <form id="create-wo-form" class="p-6 space-y-4">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">${deviceName || 'Yeni Arıza Kaydı'}</h3>
+                    ${deviceSelectionHtml}
+                    <textarea name="description" placeholder="Arıza Açıklaması" required class="w-full p-2 border rounded-md"></textarea>
+                    
+                    <button type="button" id="gemini-troubleshoot-btn" class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2">
+                        ✨ Arıza Giderme Adımları Öner
+                    </button>
+                    <div id="gemini-troubleshoot-result" class="gemini-response p-4 rounded-lg hidden"></div>
+
+                    <select name="assignedTo" required class="w-full p-2 border rounded-md mt-4">
+                        <option value="">Teknisyen Ata</option>
+                        ${users.map(u => `<option value="${u.id}">${u.name}</option>`).join('')}
+                    </select>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-action="cancel" class="bg-gray-300 px-4 py-2 rounded-lg">İptal</button>
+                        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg">Kaydı Oluştur</button>
+                    </div>
+                </form>
+            `;
+            showModal(modalContent);
+
+            document.getElementById('gemini-troubleshoot-btn').addEventListener('click', () => {
+                const description = document.querySelector('#create-wo-form textarea[name="description"]').value;
+                if (!description) {
+                    alert("Lütfen önce arıza açıklamasını girin.");
+                    return;
+                }
+                const deviceSelect = document.querySelector('#create-wo-form select[name="deviceId"]');
+                const selectedDeviceName = deviceId ? deviceName : deviceSelect.options[deviceSelect.selectedIndex].dataset.name;
+
+                const prompt = `Bir teknik servis teknisyeni için, '${selectedDeviceName}' adlı bir cihazda gözlemlenen şu arıza için olası sorun giderme adımlarını liste halinde oluştur: "${description}". Adımları basit, anlaşılır ve uygulanabilir şekilde sırala.`;
+                const targetElement = document.getElementById('gemini-troubleshoot-result');
+                callGeminiAPI(prompt, targetElement);
+            });
+
+            document.getElementById('create-wo-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                
+                let finalDeviceId = deviceId;
+                let finalDeviceName = deviceName;
+
+                if (!finalDeviceId) {
+                    const deviceSelect = form.deviceId;
+                    finalDeviceId = deviceSelect.value;
+                    finalDeviceName = deviceSelect.options[deviceSelect.selectedIndex].dataset.name;
+                }
+
+                const newWorkOrderRef = push(ref(db, 'workOrders'));
+                const newWorkOrder = {
+                    deviceId: finalDeviceId,
+                    deviceName: finalDeviceName,
+                    description: form.description.value,
+                    assignedTo: form.assignedTo.value,
+                    status: 'Bekliyor',
+                    createdBy: currentUser.uid,
+                    createdAt: serverTimestamp(),
+                    log: {
+                        [push(ref(db, `workOrders/${newWorkOrderRef.key}/log`)).key]: {
+                            userId: currentUser.uid,
+                            userName: currentUserData.name,
+                            text: 'İş emri oluşturuldu.',
+                            timestamp: serverTimestamp()
+                        }
+                    }
+                };
+                await set(newWorkOrderRef, newWorkOrder);
+                hideModal();
+                navigateTo('is-emirleri');
+            });
+        };
+
+        window.showWorkOrderDetail = async (workOrderId) => {
+            const woSnap = await get(ref(db, `workOrders/${workOrderId}`));
+            if (!woSnap.exists()) return;
+            const wo = { id: workOrderId, ...woSnap.val() };
+            
+            const statusColors = {
+                "Bekliyor": "bg-yellow-100 text-yellow-800",
+                "Başlandı": "bg-blue-100 text-blue-800",
+                "İptal Edildi": "bg-red-100 text-red-800",
+                "Tamamlandı": "bg-green-100 text-green-800",
+            };
+            
+            const logEntries = wo.log ? Object.values(wo.log).sort((a,b) => b.timestamp - a.timestamp) : [];
+
+            const modalContent = `
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-2xl font-bold">${wo.deviceName}</h3>
+                            <p class="text-gray-600">${wo.description}</p>
+                        </div>
+                        <span class="px-3 py-1.5 text-sm font-semibold rounded-full ${statusColors[wo.status] || 'bg-gray-100'}">${wo.status}</span>
+                    </div>
+                    
+                    <div id="wo-actions" class="flex flex-col sm:flex-row gap-2 mb-4">
+                        ${wo.status === 'Bekliyor' ? `<button class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg" onclick="window.updateWorkOrderStatus('${wo.id}', 'Başlandı', 'İşe başlandı.')">İşe Başla</button>` : ''}
+                        ${wo.status === 'Başlandı' ? `<button class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg" onclick="window.updateWorkOrderStatus('${wo.id}', 'Tamamlandı', 'İş tamamlandı.')">İşi Tamamla</button>` : ''}
+                        <button id="gemini-analyze-btn" class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2">
+                           ✨ Akıllı Analiz
+                        </button>
+                    </div>
+                    <div id="gemini-analysis-result" class="gemini-response p-4 rounded-lg hidden"></div>
+
+                    <h4 class="font-bold text-lg mt-6 mb-2">İşlem Geçmişi</h4>
+                    <div class="space-y-3 max-h-48 overflow-y-auto bg-gray-50 p-3 rounded-lg mb-4">
+                        ${logEntries.length > 0 ? logEntries.map(l => `
+                            <div class="p-2 bg-white rounded-md shadow-sm">
+                                <p>${l.text}</p>
+                                <p class="text-xs text-gray-500 text-right">${l.userName} - ${formatTimestamp(l.timestamp)}</p>
+                            </div>
+                        `).join('') : '<p>İşlem geçmişi yok.</p>'}
+                    </div>
+
+                    <form id="add-log-form" class="flex gap-2">
+                        <input type="text" name="logText" placeholder="Yeni bir not ekle..." required class="flex-grow p-2 border rounded-md">
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Ekle</button>
+                    </form>
+                </div>
+            `;
+            showModal(modalContent);
+
+            document.getElementById('gemini-analyze-btn').addEventListener('click', () => {
+                const logHistory = logEntries.map(l => `${l.userName} (${formatTimestamp(l.timestamp)}): ${l.text}`).join('\n');
+                const prompt = `Bir teknik servis iş emrini analiz et. Cihaz: '${wo.deviceName}'. Ana arıza tanımı: '${wo.description}'. İşlem geçmişi aşağıdadır:\n\n${logHistory}\n\nBu bilgilere dayanarak, durumu özetle, yapılanları listele ve bir sonraki adım için önerilerde bulun. Cevabını Markdown formatında, başlıklar kullanarak ver.`;
+                const targetElement = document.getElementById('gemini-analysis-result');
+                callGeminiAPI(prompt, targetElement);
+            });
+
+            document.getElementById('add-log-form').addEventListener('submit', async e => {
+                e.preventDefault();
+                const text = e.target.logText.value;
+                if (!text) return;
+                const newLogRef = push(ref(db, `workOrders/${wo.id}/log`));
+                const newLog = {
+                    userId: currentUser.uid,
+                    userName: currentUserData.name,
+                    text: text,
+                    timestamp: serverTimestamp()
+                };
+                await set(newLogRef, newLog);
+                window.showWorkOrderDetail(wo.id);
+            });
+        };
+
+        window.updateWorkOrderStatus = async (workOrderId, newStatus, logText) => {
+            if (!confirm(`İş emri durumunu "${newStatus}" olarak güncellemek istediğinizden emin misiniz?`)) return;
+
+            const woRef = ref(db, `workOrders/${workOrderId}`);
+            const newLogRef = push(ref(db, `workOrders/${workOrderId}/log`));
+            
+            const updates = {};
+            updates[`/workOrders/${workOrderId}/status`] = newStatus;
+            updates[`/workOrders/${workOrderId}/log/${newLogRef.key}`] = {
+                userId: currentUser.uid,
+                userName: currentUserData.name,
+                text: logText,
+                timestamp: serverTimestamp()
+            };
+
+            if (newStatus === 'Tamamlandı') {
+                updates[`/workOrders/${workOrderId}/completedAt`] = serverTimestamp();
+            }
+
+            await update(ref(db), updates);
+            hideModal();
+            navigateTo('is-emirleri');
+        };
+
+        window.showDayActionMenu = (date, callback) => {
+            const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
+            const adminButtonHtml = currentUserData.role === 'admin' ? `<button id="add-duty-action" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Nöbetçi Ekle</button>` : '';
+
+            const modalContent = `
+                <div class="p-6 space-y-4">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">${formattedDate}</h3>
+                    <p class="text-gray-600 mb-4">Yapmak istediğiniz işlemi seçin:</p>
+                    ${adminButtonHtml}
+                    <button id="add-announcement-action" class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">Duyuru Ekle</button>
+                    <div class="flex justify-end mt-4">
+                        <button type="button" data-action="cancel" class="bg-gray-300 px-4 py-2 rounded-lg">İptal</button>
+                    </div>
+                </div>
+            `;
+            showModal(modalContent);
+
+            if (currentUserData.role === 'admin') {
+                document.getElementById('add-duty-action').addEventListener('click', () => {
+                    hideModal();
+                    showAddDutyModal(date, callback);
+                });
+            }
+            document.getElementById('add-announcement-action').addEventListener('click', () => {
+                hideModal();
+                showAddAnnouncementModal(date, callback);
+            });
+        };
+        
+        window.showAddAnnouncementModal = (date, callback) => {
+            const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
+            const modalContent = `
+                <form id="add-announcement-form" class="p-6 space-y-4">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">Duyuru Ekle</h3>
+                    <p class="text-gray-600 mb-4">${formattedDate}</p>
+                    <textarea name="text" placeholder="Duyuru metni..." required class="w-full p-2 border rounded-md h-24"></textarea>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-action="cancel" class="bg-gray-300 px-4 py-2 rounded-lg">İptal</button>
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Kaydet</button>
+                    </div>
+                </form>
+            `;
+            showModal(modalContent);
+
+            document.getElementById('add-announcement-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const newAnnouncement = {
+                    text: form.text.value,
+                    date: date,
+                    createdBy: currentUser.uid,
+                    createdAt: serverTimestamp()
+                };
+                const newRef = push(ref(db, 'announcements'));
+                await set(newRef, newAnnouncement);
+                hideModal();
+                if (callback) callback();
+            });
+        };
+        
+        window.showAddDutyModal = async (date, callback) => {
+            const usersSnap = await get(ref(db, 'users'));
+            const users = Object.entries(usersSnap.val() || {})
+                .map(([id, data]) => ({id, ...data}))
+                .filter(u => u.role === 'technician');
+
+            const dateInputHtml = !date ? `<input type="date" name="dutyDate" required class="w-full p-2 border rounded-md">` : `<p class="text-gray-600 mb-4">${new Date(date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' })}</p>`;
+
+            const modalContent = `
+                <form id="add-duty-form" class="p-6 space-y-4">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">Nöbetçi Ata</h3>
+                    ${dateInputHtml}
+                    <select name="userId" required class="w-full p-2 border rounded-md">
+                        <option value="">Teknisyen Seçin</option>
+                        ${users.map(u => `<option value="${u.id}">${u.name}</option>`).join('')}
+                    </select>
+                    <select name="dutyType" required class="w-full p-2 border rounded-md">
+                        <option value="Gündüz">Gündüz</option>
+                        <option value="Gece">Gece</option>
+                    </select>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-action="cancel" class="bg-gray-300 px-4 py-2 rounded-lg">İptal</button>
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Kaydet</button>
+                    </div>
+                </form>
+            `;
+            showModal(modalContent);
+
+            document.getElementById('add-duty-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const dutyDate = date || form.dutyDate.value;
+                if (!dutyDate) {
+                    alert("Lütfen bir tarih seçin.");
+                    return;
+                }
+                const newDuty = {
+                    userId: form.userId.value,
+                    dutyType: form.dutyType.value,
+                    date: dutyDate,
+                    assignedBy: currentUser.uid,
+                    assignedAt: serverTimestamp()
+                };
+                const newDutyRef = push(ref(db, 'duties'));
+                await set(newDutyRef, newDuty);
+                hideModal();
+                if (callback) callback();
+            });
+        };
+        
+        window.showEditDutyModal = async (dutyId) => {
+            const dutySnap = await get(ref(db, `duties/${dutyId}`));
+            if (!dutySnap.exists()) return;
+            const duty = { id: dutyId, ...dutySnap.val() };
+
+            const usersSnap = await get(ref(db, 'users'));
+            const users = Object.entries(usersSnap.val() || {})
+                .map(([id, data]) => ({id, ...data}))
+                .filter(u => u.role === 'technician');
+
+            const formattedDate = new Date(duty.date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
+
+            const modalContent = `
+                <form id="edit-duty-form" class="p-6 space-y-4">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">Nöbeti Düzenle</h3>
+                    <p class="text-gray-600 mb-4">${formattedDate}</p>
+                    <select name="userId" required class="w-full p-2 border rounded-md">
+                        <option value="">Teknisyen Seçin</option>
+                        ${users.map(u => `<option value="${u.id}" ${u.id === duty.userId ? 'selected' : ''}>${u.name}</option>`).join('')}
+                    </select>
+                    <select name="dutyType" required class="w-full p-2 border rounded-md">
+                        <option value="Gündüz" ${duty.dutyType === 'Gündüz' ? 'selected' : ''}>Gündüz</option>
+                        <option value="Gece" ${duty.dutyType === 'Gece' ? 'selected' : ''}>Gece</option>
+                    </select>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-action="cancel" class="bg-gray-300 px-4 py-2 rounded-lg">İptal</button>
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Güncelle</button>
+                    </div>
+                </form>
+            `;
+            showModal(modalContent);
+
+            document.getElementById('edit-duty-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const updatedDuty = {
+                    userId: form.userId.value,
+                    dutyType: form.dutyType.value,
+                    date: duty.date,
+                };
+                await update(ref(db, `duties/${dutyId}`), updatedDuty);
+                hideModal();
+                renderDutyListPage();
+            });
+        };
+
+        window.deleteDuty = async (dutyId) => {
+            if (confirm("Bu nöbet kaydını silmek istediğinizden emin misiniz?")) {
+                await remove(ref(db, `duties/${dutyId}`));
+                renderDutyListPage();
+            }
+        };
+
+
+        // --- MESSAGING FUNCTIONS ---
+        const getChatId = (uid1, uid2) => {
+            return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+        };
+
+        const openChat = (otherUserId, otherUserName) => {
+            const chatId = getChatId(currentUser.uid, otherUserId);
+            const chatRef = ref(db, `chats/${chatId}`);
+
+            document.getElementById('chat-area-placeholder').classList.add('hidden');
+            const chatArea = document.getElementById('chat-area');
+            chatArea.classList.remove('hidden');
+            chatArea.innerHTML = `
+                <div class="p-4 border-b flex items-center">
+                    <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center font-bold text-gray-600 mr-3">${otherUserName.charAt(0)}</div>
+                    <h4 class="font-bold">${otherUserName}</h4>
+                </div>
+                <div id="messages-container" class="flex-grow p-4 overflow-y-auto bg-gray-100"></div>
+                <div class="p-4 bg-white border-t">
+                    <form id="message-form" class="flex gap-2">
+                        <input type="text" id="message-input" placeholder="Bir mesaj yazın..." required autocomplete="off" class="flex-grow p-2 border rounded-lg">
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Gönder</button>
+                    </form>
+                </div>
+            `;
+
+            const messagesContainer = document.getElementById('messages-container');
+            const messageForm = document.getElementById('message-form');
+
+            messageForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const text = document.getElementById('message-input').value;
+                if (!text.trim()) return;
+                
+                const newMessageRef = push(chatRef);
+                await set(newMessageRef, {
+                    text: text,
+                    from: currentUser.uid,
+                    to: otherUserId,
+                    createdAt: serverTimestamp(),
+                    read: false
+                });
+                document.getElementById('message-input').value = '';
+            });
+
+            if (activeChatListener) activeChatListener();
+
+            activeChatListener = onValue(chatRef, (snapshot) => {
+                const messagesData = snapshot.val() || {};
+                const messages = Object.entries(messagesData)
+                    .map(([id, data]) => ({id, ...data}))
+                    .sort((a, b) => a.createdAt - b.createdAt);
+                
+                messagesContainer.innerHTML = messages.map(msg => {
+                    const isSent = msg.from === currentUser.uid;
+                    return `
+                        <div class="flex ${isSent ? 'justify-end' : 'justify-start'} mb-3">
+                            <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-xl ${isSent ? 'chat-bubble-sent' : 'chat-bubble-received shadow-sm'}">
+                                <p>${msg.text}</p>
+                                <p class="text-xs text-right mt-1 ${isSent ? 'text-green-900 opacity-60' : 'text-gray-500'}">${formatTimestamp(msg.createdAt).split(' ')[1]}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+                const updates = {};
+                messages.forEach(msg => {
+                    if (msg.to === currentUser.uid && !msg.read) {
+                        updates[`/chats/${chatId}/${msg.id}/read`] = true;
+                    }
+                });
+                if (Object.keys(updates).length > 0) {
+                    update(ref(db), updates);
+                }
+            });
+        };
+
+        const listenForUnreadMessages = () => {
+            onValue(ref(db, 'chats'), (snapshot) => {
+                const allChats = snapshot.val() || {};
+                unreadMessages = {};
+                Object.values(allChats).forEach(chat => {
+                    Object.values(chat).forEach(msg => {
+                        if (msg.to === currentUser.uid && !msg.read) {
+                            unreadMessages[msg.from] = true;
+                        }
+                    });
+                });
+                
+                const unreadIndicator = document.getElementById('mesajlar-unread');
+                if (unreadIndicator) {
+                    if (Object.keys(unreadMessages).length > 0) {
+                        unreadIndicator.classList.remove('hidden');
+                    } else {
+                        unreadIndicator.classList.add('hidden');
+                    }
+                }
+
+                if (pageTitle.textContent === 'Mesajlar') {
+                    document.querySelectorAll('#users-list > div').forEach(el => {
+                        const unreadDot = el.querySelector('[data-unread-dot]');
+                        if (unreadMessages[el.dataset.userId]) {
+                            if (!unreadDot) {
+                                const dot = document.createElement('div');
+                                dot.className = 'w-3 h-3 bg-blue-500 rounded-full unread-indicator';
+                                dot.dataset.unreadDot = el.dataset.userId;
+                                el.appendChild(dot);
+                            }
+                        } else {
+                            if (unreadDot) unreadDot.remove();
+                        }
+                    });
+                }
+            });
+        };
+        
+        // --- SETTINGS FUNCTIONS ---
+        const showAddUserModal = () => {
+             const modalContent = `
+                <form id="add-user-form" class="p-6 space-y-4">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">Yeni Kullanıcı Ekle</h3>
+                    <input type="text" name="name" placeholder="Ad Soyad" required class="w-full p-2 border rounded-md">
+                    <input type="email" name="email" placeholder="E-posta" required class="w-full p-2 border rounded-md">
+                    <input type="password" name="password" placeholder="Şifre" required class="w-full p-2 border rounded-md">
+                    <select name="role" required class="w-full p-2 border rounded-md">
+                        <option value="technician">Teknisyen</option>
+                        <option value="kısıtlı-yönetici">Kısıtlı Yönetici</option>
+                        <option value="admin">Yönetici</option>
+                    </select>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-action="cancel" class="bg-gray-300 px-4 py-2 rounded-lg">İptal</button>
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Ekle</button>
+                    </div>
+                </form>
+            `;
+            showModal(modalContent);
+            document.getElementById('add-user-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const name = form.name.value;
+                const email = form.email.value;
+                const password = form.password.value;
+                const role = form.role.value;
+                
+                try {
+                    // This is a simplified way. In a real app, you'd use Firebase Functions to create users.
+                    const tempApp = initializeApp(firebaseConfig, 'Secondary');
+                    const tempAuth = getAuth(tempApp);
+                    const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+                    await set(ref(db, 'users/' + userCredential.user.uid), {
+                        name, email, role
+                    });
+                    await signOut(tempAuth);
+                    alert(`${name} adlı kullanıcı başarıyla oluşturuldu.`);
+                    hideModal();
+                    renderSettingsPage();
+                } catch (error) {
+                    console.error("Error creating user:", error);
+                    alert("Kullanıcı oluşturulurken hata oluştu: " + error.message);
+                }
+            });
+        };
+        const saveCompanyInfo = async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const info = {
+                name: form.name.value,
+                phone: form.phone.value,
+                email: form.email.value,
+                website: form.website.value,
+            };
+            await set(ref(db, 'settings/companyInfo'), info);
+            alert("Şirket bilgileri güncellendi.");
+        };
+        const addSettingItem = async (e, type) => {
+            e.preventDefault();
+            const form = e.target;
+            const name = form.name.value;
+            if (!name) return;
+            const newRef = push(ref(db, `settings/${type}`));
+            await set(newRef, { name });
+            form.reset();
+            renderSettingsPage();
+        };
+        window.deleteSettingItem = async (id, type) => {
+            if (confirm("Bu öğeyi silmek istediğinizden emin misiniz?")) {
+                await remove(ref(db, `settings/${type}/${id}`));
+                renderSettingsPage();
+            }
+        };
+        window.deleteUser = async (userId) => {
+             if (confirm("Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.")) {
+                // Deleting from Auth is a privileged operation and should be done via Firebase Functions.
+                // We will only delete from the database for this demo.
+                await remove(ref(db, 'users/' + userId));
+                alert("Kullanıcı veritabanından silindi. Lütfen Firebase Authentication'dan da silmeyi unutmayın.");
+                renderSettingsPage();
+            }
+        };
+        
+        // --- CSV EXPORT ---
+        const exportTableToCSV = (tableId, filename) => {
+            let csv = [];
+            const rows = document.querySelectorAll(`#${tableId} tr`);
+            
+            for (const row of rows) {
+                const cols = row.querySelectorAll("td, th");
+                const rowData = [];
+                for (const col of cols) {
+                    // Get text content, remove extra whitespace, and handle commas
+                    let data = col.innerText.replace(/(\r\n|\n|\r)/gm, "").replace(/(\s\s)/gm, " ").trim();
+                    // To prevent issues with commas in data, wrap in double quotes
+                    data = `"${data}"`; 
+                    // Don't include the "İşlemler" column
+                    if (col.innerText !== "İşlemler") {
+                       rowData.push(data);
+                    }
+                }
+                csv.push(rowData.join(","));
+            }
+
+            const csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
+            const downloadLink = document.createElement("a");
+            downloadLink.download = filename;
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = "none";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+    </script>
+</body>
+</html>
