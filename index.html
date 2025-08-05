@@ -136,6 +136,8 @@
 
     <!-- Main Application -->
     <div id="app-container" class="hidden">
+        <!-- Sidebar Overlay for mobile -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden md:hidden"></div>
         <!-- Sidebar -->
         <div id="sidebar" class="sidebar fixed top-0 left-0 h-full bg-gray-800 text-white w-64 z-30 transform -translate-x-full md:translate-x-0 flex flex-col">
             <div class="p-4">
@@ -168,8 +170,8 @@
                 <button id="menu-toggle" class="md:hidden p-2 rounded-md bg-white text-gray-600 shadow-md">
                     <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
                 </button>
-                <h2 id="page-title" class="text-2xl md:text-3xl font-bold text-gray-800">Ana Sayfa</h2>
-                <div id="clock" class="text-lg font-semibold text-gray-600 bg-white px-4 py-2 rounded-lg shadow-md"></div>
+                <h2 id="page-title" class="text-xl md:text-3xl font-bold text-gray-800">Ana Sayfa</h2>
+                <div id="clock" class="text-sm md:text-lg font-semibold text-gray-600 bg-white px-4 py-2 rounded-lg shadow-md"></div>
             </header>
 
             <!-- Page Content Area -->
@@ -254,6 +256,7 @@
         const clockElement = document.getElementById('clock');
         const menuToggle = document.getElementById('menu-toggle');
         const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
         const mainContent = document.getElementById('main-content');
         const userProfileWidget = document.getElementById('user-profile-widget');
         const forgotPasswordLink = document.getElementById('forgot-password-link');
@@ -288,6 +291,7 @@
                 </div>
             `;
             modalContainer.classList.remove('hidden');
+            history.pushState({ modalOpen: true }, null, '#modal');
             modalContainer.querySelector('.modal-bg').addEventListener('click', (e) => {
                 if (e.target === modalContainer.querySelector('.modal-bg')) {
                     hideModal();
@@ -301,8 +305,13 @@
 
         const hideModal = () => {
             const modalContainer = document.getElementById('modal-container');
-            modalContainer.classList.add('hidden');
-            modalContainer.innerHTML = '';
+            if (!modalContainer.classList.contains('hidden')) {
+                modalContainer.classList.add('hidden');
+                modalContainer.innerHTML = '';
+                if (history.state && history.state.modalOpen) {
+                    history.back();
+                }
+            }
         };
         
         // --- GEMINI API CALLER ---
@@ -480,7 +489,8 @@
             { id: 'nobet-listesi', title: 'Nöbet Listesi', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />', roles: ['admin', 'kısıtlı-yönetici', 'technician'] },
             { id: 'mesajlar', title: 'Mesajlar', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.068.158 2.148.279 3.238.369.48.033.96.066 1.44.099.48.033.959.066 1.439.099 1.09.09 2.17.211 3.238.369 1.584.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />', roles: ['admin', 'kısıtlı-yönetici', 'technician'] },
             { id: 'arsiv', title: 'Arşiv', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />', roles: ['admin', 'kısıtlı-yönetici', 'technician'] },
-            { id: 'ayarlar', title: 'Ayarlar', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-1.226.554-.22 1.197-.22 1.752 0 .554.22 1.02.684 1.11 1.226l.094.542c.063.372.363.65.743.765.38.115.784.06.115-.145l.432-.433a1.06 1.06 0 0 1 1.5 0l.432.433c.44.44.44 1.227 0 1.667l-.432.432c-.205.205-.26.506-.145.885.115.38.392.68.765.743l.542.094c.542.09.927.56 1.226 1.11.22.554.22 1.197 0 1.752-.22.554-.684 1.02-1.226 1.11l-.542.094c-.372.063-.65.363-.765.743-.115.38-.06.784.145 1.15l.433.433c.44.44.44 1.227 0 1.667l-.432.432a1.06 1.06 0 0 1-1.5 0l-.432-.433c-.205-.205-.506-.26-.885-.145-.38.115-.68.392-.743.765l-.094.542c-.09.542-.56.927-1.11 1.226-.554-.22-1.197.22-1.752 0-.554-.22-1.02-.684-1.11-1.226l-.094-.542c-.063-.372-.363-.65-.743-.765-.38-.115-.784-.06-1.15.145l-.432.432a1.06 1.06 0 0 1-1.5 0l-.432-.433c-.44-.44-.44-1.227 0-1.667l.432-.432c.205-.205.26-.506.145-.885-.115-.38-.392-.68-.765.743l-.542-.094c-.542-.09-1.007-.56-1.226-1.11-.22-.554-.22-1.197 0-1.752.22-.554.684-1.02 1.226 1.11l.542-.094c.372-.063.65-.363.765-.743.115.38.06-.784-.145-1.15l-.432-.432a1.06 1.06 0 0 1 0-1.667l.432-.432c.44-.44 1.227-.44 1.667 0l.432.433c.205.205.506.26.885.145.38-.115.68-.392.743-.765l.094-.542Z" />', roles: ['admin', 'kısıtlı-yönetici'] },
+            { id: 'profil', title: 'Profil', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />', roles: ['admin', 'kısıtlı-yönetici', 'technician'] },
+            { id: 'ayarlar', title: 'Ayarlar', icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-1.226.554-.22 1.197-.22 1.752 0 .554.22 1.02.684 1.11 1.226l.094.542c.063.372.363.65.743.765.38.115.784.06.115-.145l.432-.433a1.06 1.06 0 0 1 1.5 0l.432.433c.44.44.44 1.227 0 1.667l-.432.432c-.205.205-.26.506-.145.885.115.38.392.68.765.743l.542.094c.542.09.927.56 1.226 1.11.22.554.22 1.197 0 1.752-.22.554-.684 1.02-1.226 1.11l-.542.094c-.372.063-.65.363-.765.743-.115.38-.06.784.145 1.15l.433.433c.44.44.44 1.227 0 1.667l-.432.432a1.06 1.06 0 0 1-1.5 0l-.432-.433c-.205-.205-.506-.26-.885-.145-.38.115-.68.392-.743.765l-.094.542c-.09.542-.56.927-1.11 1.226-.554-.22-1.197.22-1.752 0-.554-.22-1.02-.684-1.11-1.226l-.094-.542c-.063-.372-.363-.65-.743-.765-.38-.115-.784-.06-1.15.145l-.432.432a1.06 1.06 0 0 1-1.5 0l-.432-.433c-.44-.44-.44-1.227 0-1.667l.432-.432c.205-.205.26-.506.145-.885-.115-.38-.392-.68-.765.743l-.542-.094c-.542-.09-1.007-.56-1.226-1.11-.22-.554-.22-1.197 0-1.752.22-.554.684-1.02 1.226 1.11l.542-.094c.372-.063.65-.363.765-.743.115.38.06-.784-.145-1.15l-.432-.432a1.06 1.06 0 0 1 0-1.667l.432-.432c.44-.44 1.227-.44 1.667 0l.432.432c.205.205.506.26.885.145.38-.115.68-.392.743-.765l.094-.542Z" />', roles: ['admin', 'kısıtlı-yönetici'] },
         ];
 
         const setupNavigation = () => {
@@ -507,14 +517,38 @@
                 e.preventDefault();
                 navigateTo(link.dataset.page);
                 if (window.innerWidth < 768) {
-                    sidebar.classList.add('-translate-x-full');
+                    closeSidebar();
                 }
             }
         });
 
-        menuToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('-translate-x-full');
+        const openSidebar = () => {
+            sidebar.classList.remove('-translate-x-full');
+            sidebarOverlay.classList.remove('hidden');
+            history.pushState({ sidebarOpen: true }, null, '#sidebar');
+        };
+
+        const closeSidebar = () => {
+             if (!sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+                if (history.state && history.state.sidebarOpen) {
+                    history.back();
+                }
+            }
+        };
+
+        menuToggle.addEventListener('click', openSidebar);
+        sidebarOverlay.addEventListener('click', closeSidebar);
+
+        window.addEventListener('popstate', (event) => {
+            if (event.state && event.state.modalOpen) {
+                 hideModal();
+            } else if (event.state && event.state.sidebarOpen) {
+                 closeSidebar();
+            }
         });
+
 
         const stopQRScanner = () => {
             if (html5QrCode && html5QrCode.isScanning) {
@@ -540,6 +574,7 @@
                 case 'nobet-listesi': renderDutyListPage(); break;
                 case 'mesajlar': renderMessagesPage(); break;
                 case 'arsiv': renderArchivePage(); break;
+                case 'profil': renderProfilePage(); break;
                 case 'ayarlar': renderSettingsPage(); break;
             }
         };
@@ -582,7 +617,7 @@
                 }
             });
 
-            events.sort((a, b) => a.date - b.date);
+            events.sort((a, b) => b.date - a.date); // Sort newest first
             let upcomingHtml = events.length > 0 ? events.map(event => {
                 const eventColors = {
                     'iş emri': 'bg-blue-100 text-blue-800',
@@ -631,15 +666,23 @@
 
             pageContent.innerHTML = `
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4">Yaklaşan Etkinlikler</h3>
-                        <div id="upcoming-events-list" class="space-y-4 max-h-96 overflow-y-auto">${upcomingHtml}</div>
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-xl shadow-lg">
+                            <div class="p-6 cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                                <h3 class="text-xl font-bold text-gray-800">Yaklaşan Etkinlikler</h3>
+                            </div>
+                            <div id="upcoming-events-list" class="p-6 pt-0 space-y-4 max-h-96 overflow-y-auto">${upcomingHtml}</div>
+                        </div>
                     </div>
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4">Nöbetçi Listesi</h3>
-                        <div class="space-y-4">
-                            ${todayDutiesHtml}
-                            ${tomorrowDutiesHtml}
+                    <div>
+                        <div class="bg-white rounded-xl shadow-lg">
+                             <div class="p-6 cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                                <h3 class="text-xl font-bold text-gray-800">Nöbetçi Listesi</h3>
+                            </div>
+                            <div class="p-6 pt-0 space-y-4">
+                                ${todayDutiesHtml}
+                                ${tomorrowDutiesHtml}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -705,13 +748,14 @@
                             <td class="p-4"><input type="checkbox" class="device-checkbox" data-id="${device.id}"></td>
                             <td class="p-4">${device.name}</td>
                             <td class="p-4 text-gray-600">${device.serial}</td>
-                            <td class="p-4 text-gray-600">${device.categoryName || 'N/A'}</td>
-                            <td class="p-4 text-gray-600">${device.locationName || 'N/A'}</td>
+                            <td class="p-4 text-gray-600">${formatTimestamp(device.createdAt, false)}</td>
+                            <td class="p-4 text-gray-600">${Math.floor((new Date() - new Date(device.createdAt)) / (1000 * 60 * 60 * 24 * 365.25))} yıl</td>
+                            <td class="p-4 text-gray-600">${device.status || 'Aktif'}</td>
                             <td class="p-4">
                                 <button class="text-indigo-600 hover:text-indigo-900" onclick="window.showDeviceDetail('${device.id}')">Detay</button>
                             </td>
                         </tr>
-                    `).join('') : `<tr><td colspan="6" class="text-center p-6 text-gray-500">Kayıtlı cihaz bulunamadı.</td></tr>`;
+                    `).join('') : `<tr><td colspan="7" class="text-center p-6 text-gray-500">Kayıtlı cihaz bulunamadı.</td></tr>`;
 
                     pageContent.innerHTML = `
                         <div class="bg-white p-6 rounded-xl shadow-lg">
@@ -720,13 +764,19 @@
                                     <input type="text" id="device-filter" placeholder="Cihaz adı, seri no, kategori veya konuma göre filtrele..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                     <svg class="w-5 h-5 text-gray-400 absolute top-1/2 left-3 transform -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
                                 </div>
+                                 <div class="flex items-center gap-2" id="device-status-filter">
+                                    <button data-status="all" class="filter-btn bg-indigo-600 text-white px-3 py-1 rounded-lg text-sm">Tümü</button>
+                                    <button data-status="Aktif" class="filter-btn bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm">Aktif</button>
+                                    <button data-status="Bakımda" class="filter-btn bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm">Bakımda</button>
+                                    <button data-status="Arızalı" class="filter-btn bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm">Arızalı</button>
+                                </div>
                                 <div class="flex gap-2 w-full md:w-auto">
                                     <div class="relative inline-block text-left">
                                         <button id="bulk-actions-btn" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
                                             Toplu İşlemler
                                             <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                                         </button>
-                                        <div id="bulk-actions-menu" class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden">
+                                        <div id="bulk-actions-menu" class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10">
                                             <div class="py-1">
                                                 <a href="#" id="bulk-label-selected" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Seçilenleri Etiketle</a>
                                                 <a href="#" id="bulk-label-all" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tümünü Etiketle</a>
@@ -744,8 +794,9 @@
                                             <th class="p-4"><input type="checkbox" id="select-all-devices"></th>
                                             <th class="p-4 font-semibold">Cihaz Adı</th>
                                             <th class="p-4 font-semibold">Seri Numarası</th>
-                                            <th class="p-4 font-semibold">Kategori</th>
-                                            <th class="p-4 font-semibold">Konum</th>
+                                            <th class="p-4 font-semibold">Eklenme Tarihi</th>
+                                            <th class="p-4 font-semibold">Yaşı</th>
+                                            <th class="p-4 font-semibold">Durum</th>
                                             <th class="p-4 font-semibold">İşlemler</th>
                                         </tr>
                                     </thead>
@@ -804,13 +855,14 @@
                                 <td class="p-4"><input type="checkbox" class="device-checkbox" data-id="${device.id}"></td>
                                 <td class="p-4">${device.name}</td>
                                 <td class="p-4 text-gray-600">${device.serial}</td>
-                                <td class="p-4 text-gray-600">${device.categoryName || 'N/A'}</td>
-                                <td class="p-4 text-gray-600">${device.locationName || 'N/A'}</td>
+                                <td class="p-4 text-gray-600">${formatTimestamp(device.createdAt, false)}</td>
+                                <td class="p-4 text-gray-600">${Math.floor((new Date() - new Date(device.createdAt)) / (1000 * 60 * 60 * 24 * 365.25))} yıl</td>
+                                <td class="p-4 text-gray-600">${device.status || 'Aktif'}</td>
                                 <td class="p-4">
                                     <button class="text-indigo-600 hover:text-indigo-900" onclick="window.showDeviceDetail('${device.id}')">Detay</button>
                                 </td>
                             </tr>
-                        `).join('') : `<tr><td colspan="6" class="text-center p-6 text-gray-500">Filtreyle eşleşen cihaz bulunamadı.</td></tr>`;
+                        `).join('') : `<tr><td colspan="7" class="text-center p-6 text-gray-500">Filtreyle eşleşen cihaz bulunamadı.</td></tr>`;
                     });
                 };
                 renderTable(devices);
@@ -985,27 +1037,20 @@
                 const usersSnap = await get(ref(db, 'users'));
                 const usersMap = new Map(Object.entries(usersSnap.val() || {}));
                 
-                let duties = Object.entries(dutiesData)
+                let allDuties = Object.entries(dutiesData)
                     .map(([id, data]) => ({ id, ...data }))
                     .sort((a,b) => new Date(b.date) - new Date(a.date));
 
-                const tableBody = duties.length > 0 ? duties.map(duty => `
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-4">${new Date(duty.date + 'T00:00:00').toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric', weekday: 'long' })}</td>
-                        <td class="p-4 text-gray-600">${usersMap.get(duty.userId)?.name || 'Bilinmeyen'}</td>
-                        <td class="p-4 text-gray-600">${duty.dutyType}</td>
-                        ${currentUserData.role === 'admin' ? `
-                        <td class="p-4">
-                            <button class="text-blue-600 hover:text-blue-900 mr-2" onclick="window.showEditDutyModal('${duty.id}')">Düzenle</button>
-                            <button class="text-red-600 hover:text-red-900" onclick="window.deleteDuty('${duty.id}')">Sil</button>
-                        </td>` : '<td class="p-4"></td>'}
-                    </tr>
-                `).join('') : `<tr><td colspan="4" class="text-center p-6 text-gray-500">Kayıtlı nöbet bulunamadı.</td></tr>`;
-
                 pageContent.innerHTML = `
                     <div class="bg-white p-6 rounded-xl shadow-lg">
-                        <div class="flex justify-between items-center mb-4">
+                        <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                             <h3 class="text-xl font-bold text-gray-800">Tüm Nöbetler</h3>
+                            <div class="flex items-center gap-2" id="duty-filter-container">
+                                <button data-filter="this-month" class="filter-btn bg-indigo-600 text-white px-3 py-1 rounded-lg text-sm">Bu Ay</button>
+                                <button data-filter="future" class="filter-btn bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm">Gelecek</button>
+                                <button data-filter="past" class="filter-btn bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm">Geçmiş</button>
+                                <button data-filter="all" class="filter-btn bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm">Tümü</button>
+                            </div>
                              ${currentUserData.role === 'admin' ? `<button id="add-duty-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center">Yeni Nöbet Ekle</button>` : ''}
                         </div>
                         <div class="overflow-x-auto">
@@ -1018,14 +1063,59 @@
                                         ${currentUserData.role === 'admin' ? `<th class="p-4 font-semibold">İşlemler</th>` : '<th class="p-4 font-semibold"></th>'}
                                     </tr>
                                 </thead>
-                                <tbody class="text-gray-800">${tableBody}</tbody>
+                                <tbody id="duty-table-body" class="text-gray-800"></tbody>
                             </table>
                         </div>
                     </div>
                 `;
+                
+                const tableBody = document.getElementById('duty-table-body');
+                const renderFilteredDuties = (filter) => {
+                    const now = new Date();
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    
+                    const filterFunctions = {
+                        'this-month': d => new Date(d.date).getMonth() === today.getMonth() && new Date(d.date).getFullYear() === today.getFullYear(),
+                        'future': d => new Date(d.date) >= today,
+                        'past': d => new Date(d.date) < today,
+                        'all': d => true,
+                    };
+
+                    const filteredDuties = allDuties.filter(filterFunctions[filter]);
+                    
+                    tableBody.innerHTML = filteredDuties.length > 0 ? filteredDuties.map(duty => `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="p-4">${new Date(duty.date + 'T00:00:00').toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric', weekday: 'long' })}</td>
+                            <td class="p-4 text-gray-600">${usersMap.get(duty.userId)?.name || 'Bilinmeyen'}</td>
+                            <td class="p-4 text-gray-600">${duty.dutyType}</td>
+                            ${currentUserData.role === 'admin' ? `
+                            <td class="p-4">
+                                <button class="text-blue-600 hover:text-blue-900 mr-2" onclick="window.showEditDutyModal('${duty.id}')">Düzenle</button>
+                                <button class="text-red-600 hover:text-red-900" onclick="window.deleteDuty('${duty.id}')">Sil</button>
+                            </td>` : '<td class="p-4"></td>'}
+                        </tr>
+                    `).join('') : `<tr><td colspan="4" class="text-center p-6 text-gray-500">Bu filtreye uygun nöbet bulunamadı.</td></tr>`;
+                };
+                
+                const filterContainer = document.getElementById('duty-filter-container');
+                filterContainer.addEventListener('click', e => {
+                    if(e.target.tagName === 'BUTTON') {
+                        filterContainer.querySelectorAll('button').forEach(btn => {
+                            btn.classList.remove('bg-indigo-600', 'text-white');
+                            btn.classList.add('bg-gray-200', 'text-gray-700');
+                        });
+                        e.target.classList.add('bg-indigo-600', 'text-white');
+                        e.target.classList.remove('bg-gray-200', 'text-gray-700');
+                        renderFilteredDuties(e.target.dataset.filter);
+                    }
+                });
+
                 if (currentUserData.role === 'admin') {
                     document.getElementById('add-duty-btn').addEventListener('click', () => window.showAddDutyModal(null, renderDutyListPage));
                 }
+
+                // Initial render for "This Month"
+                renderFilteredDuties('this-month');
             });
         };
 
@@ -1090,39 +1180,154 @@
 
         const renderArchivePage = async () => {
             pageContent.innerHTML = `<div class="text-center p-10"><div class="spinner mx-auto"></div></div>`;
-            const workOrdersSnap = await get(ref(db, 'workOrders'));
-            const workOrdersData = workOrdersSnap.val() || {};
+            
+            const [workOrdersSnap, dutiesSnap, announcementsSnap, usersSnap] = await Promise.all([
+                get(ref(db, 'workOrders')),
+                get(ref(db, 'duties')),
+                get(ref(db, 'announcements')),
+                get(ref(db, 'users'))
+            ]);
 
-            const archivedOrders = Object.values(workOrdersData)
-                .filter(wo => wo.status === "Tamamlandı")
-                .sort((a,b) => b.completedAt - a.completedAt);
+            const allWorkOrders = workOrdersSnap.val() || {};
+            const allDuties = dutiesSnap.val() || {};
+            const allAnnouncements = announcementsSnap.val() || {};
+            const usersMap = new Map(Object.entries(usersSnap.val() || {}));
+            
+            let archivedItems = [];
+            const todayStr = getLocalDateString(new Date());
 
-            if (archivedOrders.length === 0) {
-                pageContent.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-lg text-center text-gray-500">Arşivde iş emri bulunmuyor.</div>`;
+            Object.values(allWorkOrders).filter(wo => wo.status === "Tamamlandı").forEach(item => {
+                archivedItems.push({ type: 'İş Emri', date: new Date(item.completedAt), title: item.description, user: usersMap.get(item.assignedTo)?.name || '' });
+            });
+            Object.values(allDuties).filter(d => new Date(d.date) < new Date(todayStr)).forEach(item => {
+                archivedItems.push({ type: 'Nöbet', date: new Date(item.date), title: item.dutyType, user: usersMap.get(item.userId)?.name || '' });
+            });
+             Object.values(allAnnouncements).filter(a => new Date(a.date) < new Date(todayStr)).forEach(item => {
+                archivedItems.push({ type: 'Duyuru', date: new Date(item.date), title: item.text, user: usersMap.get(item.createdBy)?.name || '' });
+            });
+
+            archivedItems.sort((a,b) => b.date - a.date);
+
+            if (archivedItems.length === 0) {
+                pageContent.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-lg text-center text-gray-500">Arşivde öğe bulunmuyor.</div>`;
                 return;
             }
 
-            const listHtml = archivedOrders.map(wo => `
-                <div class="bg-white p-4 rounded-lg shadow-sm opacity-70">
+            const listHtml = archivedItems.map(item => {
+                 const eventColors = {
+                    'İş Emri': 'bg-gray-200 text-gray-800',
+                    'Nöbet': 'bg-gray-200 text-gray-800',
+                    'Duyuru': 'bg-gray-200 text-gray-800'
+                };
+                return `
+                <div class="bg-white p-4 rounded-lg shadow-sm opacity-80">
                     <div class="flex justify-between items-start">
                         <div>
-                            <h4 class="font-bold text-lg text-gray-700">${wo.deviceName}</h4>
-                            <p class="text-sm text-gray-500">${wo.description}</p>
-                            <p class="text-xs text-gray-400 mt-2">Tamamlanma: ${formatTimestamp(wo.completedAt)}</p>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full ${eventColors[item.type]}">${item.type}</span>
+                            <h4 class="font-bold text-lg mt-2 text-gray-700">${item.title}</h4>
+                            <p class="text-xs text-gray-500 mt-1">${item.user}</p>
                         </div>
-                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-800">Tamamlandı</span>
+                        <p class="text-xs text-gray-400 mt-2">${formatTimestamp(item.date)}</p>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
 
             pageContent.innerHTML = `
                 <div class="bg-white p-6 rounded-xl shadow-lg">
-                     <h3 class="text-xl font-bold text-gray-800 mb-4">Arşivlenmiş İş Emirleri</h3>
+                     <h3 class="text-xl font-bold text-gray-800 mb-4">Arşiv</h3>
                      <div class="space-y-4">${listHtml}</div>
                 </div>
             `;
         };
         
+        const renderProfilePage = async () => {
+             pageContent.innerHTML = `
+                <div class="max-w-2xl mx-auto">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold mb-4">Profilim</h3>
+                        <form id="profile-form" class="space-y-4">
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700">Ad Soyad</label>
+                                <input type="text" name="name" value="${currentUserData.name}" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700">E-posta</label>
+                                <input type="email" name="email" value="${currentUserData.email}" disabled class="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Telefon</label>
+                                <input type="tel" name="phone" value="${currentUserData.phone || ''}" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Departman</label>
+                                <input type="text" name="department" value="${currentUserData.department || ''}" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Kaydet</button>
+                            </div>
+                        </form>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl shadow-lg mt-6">
+                        <h3 class="text-xl font-bold mb-4">Bildirim Ayarları</h3>
+                        <div class="flex items-center justify-between">
+                            <p>Tarayıcı Bildirimleri</p>
+                            <div>
+                                <button id="request-notification-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">İzin İste</button>
+                                <span id="notification-status" class="ml-2 text-sm font-semibold"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('profile-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const updates = {
+                    name: form.name.value,
+                    phone: form.phone.value,
+                    department: form.department.value,
+                };
+                await update(ref(db, `users/${currentUser.uid}`), updates);
+                alert('Profil bilgileri güncellendi.');
+                currentUserData = {...currentUserData, ...updates};
+                updateUserProfileWidget();
+            });
+
+            const notifBtn = document.getElementById('request-notification-btn');
+            const notifStatus = document.getElementById('notification-status');
+            
+            const updateNotificationStatus = () => {
+                if (!("Notification" in window)) {
+                    notifStatus.textContent = 'Desteklenmiyor';
+                    notifBtn.disabled = true;
+                    return;
+                }
+                switch(Notification.permission) {
+                    case 'granted':
+                        notifStatus.textContent = 'İzin Verildi';
+                        notifStatus.className = 'ml-2 text-sm font-semibold text-green-600';
+                        notifBtn.disabled = true;
+                        break;
+                    case 'denied':
+                        notifStatus.textContent = 'Reddedildi';
+                         notifStatus.className = 'ml-2 text-sm font-semibold text-red-600';
+                        notifBtn.disabled = true;
+                        break;
+                    default:
+                        notifStatus.textContent = 'Bekleniyor';
+                        notifStatus.className = 'ml-2 text-sm font-semibold text-yellow-600';
+                        notifBtn.disabled = false;
+                }
+            };
+            updateNotificationStatus();
+            notifBtn.addEventListener('click', () => {
+                Notification.requestPermission().then(permission => {
+                    updateNotificationStatus();
+                });
+            });
+        };
+
         const renderSettingsPage = async () => {
             pageContent.innerHTML = `<div class="text-center p-10"><div class="spinner mx-auto"></div></div>`;
             
@@ -1167,16 +1372,6 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     ${userManagementHtml}
                     <div class="bg-white p-6 rounded-xl shadow-lg">
-                        <h3 class="text-xl font-bold mb-4">Bildirim Ayarları</h3>
-                        <div class="flex items-center justify-between">
-                            <p>Tarayıcı Bildirimleri</p>
-                            <div>
-                                <button id="request-notification-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">İzin İste</button>
-                                <span id="notification-status" class="ml-2 text-sm font-semibold"></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
                         <h3 class="text-xl font-bold mb-4">Şirket Bilgileri (Etiket için)</h3>
                         <form id="company-info-form" class="space-y-4">
                             <input type="text" name="name" placeholder="Şirket Adı" value="${companyInfo.name}" class="w-full p-2 border rounded-md">
@@ -1211,40 +1406,6 @@
             document.getElementById('company-info-form').addEventListener('submit', saveCompanyInfo);
             document.getElementById('add-category-form').addEventListener('submit', e => addSettingItem(e, 'categories'));
             document.getElementById('add-location-form').addEventListener('submit', e => addSettingItem(e, 'locations'));
-            
-            // Notification settings logic
-            const notifBtn = document.getElementById('request-notification-btn');
-            const notifStatus = document.getElementById('notification-status');
-            
-            const updateNotificationStatus = () => {
-                if (!("Notification" in window)) {
-                    notifStatus.textContent = 'Desteklenmiyor';
-                    notifBtn.disabled = true;
-                    return;
-                }
-                switch(Notification.permission) {
-                    case 'granted':
-                        notifStatus.textContent = 'İzin Verildi';
-                        notifStatus.className = 'ml-2 text-sm font-semibold text-green-600';
-                        notifBtn.disabled = true;
-                        break;
-                    case 'denied':
-                        notifStatus.textContent = 'Reddedildi';
-                         notifStatus.className = 'ml-2 text-sm font-semibold text-red-600';
-                        notifBtn.disabled = true;
-                        break;
-                    default:
-                        notifStatus.textContent = 'Bekleniyor';
-                        notifStatus.className = 'ml-2 text-sm font-semibold text-yellow-600';
-                        notifBtn.disabled = false;
-                }
-            };
-            updateNotificationStatus();
-            notifBtn.addEventListener('click', () => {
-                Notification.requestPermission().then(permission => {
-                    updateNotificationStatus();
-                });
-            });
         };
 
         // --- MODAL & DETAIL FUNCTIONS ---
@@ -1311,6 +1472,11 @@
                         <option value="">Konum Seçin</option>
                         ${locations.map(l => `<option value="${l.id}" data-name="${l.name}">${l.name}</option>`).join('')}
                     </select>
+                     <select name="status" required class="w-full p-2 border rounded-md">
+                        <option value="Aktif">Aktif</option>
+                        <option value="Bakımda">Bakımda</option>
+                        <option value="Arızalı">Arızalı</option>
+                    </select>
                     <textarea name="details" placeholder="Cihaz Detayları" class="w-full p-2 border rounded-md"></textarea>
                     <div class="flex justify-end gap-2">
                         <button type="button" data-action="cancel" class="bg-gray-300 px-4 py-2 rounded-lg">İptal</button>
@@ -1332,6 +1498,7 @@
                     categoryName: categorySelect.options[categorySelect.selectedIndex].dataset.name,
                     locationId: locationSelect.value,
                     locationName: locationSelect.options[locationSelect.selectedIndex].dataset.name,
+                    status: form.status.value,
                     details: form.details.value,
                     createdAt: serverTimestamp()
                 };
@@ -2089,8 +2256,6 @@
         const requestNotificationPermission = () => {
             if (!("Notification" in window)) {
                 console.log("This browser does not support desktop notification");
-            } else if (Notification.permission === "default") {
-                // We will ask for permission via the button in settings
             }
         };
 
