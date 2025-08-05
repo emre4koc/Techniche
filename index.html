@@ -672,16 +672,18 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2">
                         <div class="bg-white rounded-xl shadow-lg">
-                            <div class="p-6 cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                            <div class="p-6 cursor-pointer flex justify-between items-center" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')">
                                 <h3 class="text-xl font-bold text-gray-800">Yaklaşan Etkinlikler</h3>
+                                <svg class="w-6 h-6 transition-transform transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
                             </div>
                             <div id="upcoming-events-list" class="p-6 pt-0 space-y-4 max-h-96 overflow-y-auto">${upcomingHtml}</div>
                         </div>
                     </div>
                     <div>
                         <div class="bg-white rounded-xl shadow-lg">
-                             <div class="p-6 cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                             <div class="p-6 cursor-pointer flex justify-between items-center" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')">
                                 <h3 class="text-xl font-bold text-gray-800">Nöbetçi Listesi</h3>
+                                <svg class="w-6 h-6 transition-transform transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
                             </div>
                             <div class="p-6 pt-0 space-y-4">
                                 ${todayDutiesHtml}
